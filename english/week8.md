@@ -6,15 +6,14 @@ td, th {
 
 # Stimulus framework
 
-> For the more information, e.g. installation instructions can be found at https://stimulus.hotwired.dev/
-
 Stimulus is a JavaScript framework used for adding interactivity to HTML without having to write a lot of custom JavaScript.<br />
 It provides a set of JavaScript modules that can be attached to HTML elements with specific attributes, allowing you to write simpler and more maintainable code.<br />
 It works well with Rails and uses the latest browser technologies to provide a fast and smooth user experience.
 
+> For the more information, e.g. installation instructions can be found at https://stimulus.hotwired.dev/
+
 Pros:
 
-- Encourages separation of concerns by keeping the HTML, JavaScript, and Ruby code separate.
 - Helps reduce the amount of JavaScript that needs to be written in order to achieve common functionality.
 - Provides a clear API for dispatching and listening to events on the page.
 - Can improve performance by avoiding some of the overhead associated with a full JavaScript framework.
@@ -23,8 +22,6 @@ Cons:
 
 - May not be suitable for more complex applications that require a lot of client-side functionality.
 - Stimulus controllers can become bloated and difficult to manage if not carefully organized.
-- Does not provide built-in support for state management or data fetching, which may be necessary for certain applications.
-  - Stimulus takes a different approach. A Stimulus application's state lives as attributes in the DOM
 - Could add an extra layer of complexity for developers who are not familiar with the framework.
 
 ## Stimulus framework components
@@ -45,7 +42,7 @@ import { Controller } from "@hotwired/stimulus";
 export default class extends Controller {}
 ```
 
-Here's an example where HTML div -element has an identifier called `hello`, so it's associated to the Stimulus controller named hello_controller.js (example above).<br />
+Here's an example where div -element has a data-controller attribute called `hello`, so it's associated to the Stimulus controller named hello_controller.js (example above).<br />
 The's scope in Stimulus includes the element it's connected to and its children, but not the surrounding elements.
 For example, the `<div>`, `<input>` and `<button>` below are part of the controller’s scope, but the surrounding `<h1>` element is not.
 
@@ -59,8 +56,7 @@ For example, the `<div>`, `<input>` and `<button>` below are part of the control
 
 ### Actions
 
-Actions are methods defined within a controller that respond to user events or changes in the application state. Actions are identified using the data-action attribute and can be triggered by a wide variety of events, such as clicks, form submissions, or even custom events.
-
+Actions are methods defined within a controller that respond to user events or changes in the application state. Actions are identified using the data-action attribute and can be triggered by a wide variety of events, such as clicks, form submissions, or even custom events.<br />
 Here's an example of adding action to the button -element `<button data-action="click->hello#greet">Greet</button>`. This code attaches a click event listener to the button element with the controller identifier "hello" and calls its "greet" method when the button is clicked.
 
 ```html
@@ -101,9 +97,9 @@ export default class extends Controller {
 
 ### Values
 
-Stimulus, values are essentially data that can be stored and accessed within a particular controller. They can be defined and accessed using the value method within a controller. A value can represent any kind of data, such as a string, number or boolean.
+Values are data that can be stored and accessed within a controller by using the value method. Values can be declared in several ways such as static, attribute on an HTML element or dynamic. The example shows an example of how to add value to an attribute of an HTML element and how to define and access a value in a Stimulus controller.<br />
 
-Values in Stimulus can be declared in several ways, including as a static value, an attribute on an HTML element, or a dynamic value returned by a function or Promise. Here's an example of how to define and access a value in a Stimulus controller:
+The structure of the HTML attribute to a value is data-[controller name]-[attribute name]-value. At the example below attribute is `data-hello-greeting-value` and the setted value of it is `Welcome`.
 
 ```html
 <h1>Greetings</h1>
@@ -112,6 +108,8 @@ Values in Stimulus can be declared in several ways, including as a static value,
   <button data-action="click->hello#greet">Greet</button>
 </div>
 ```
+
+A static values array is created in the controller, and it includes the attribute name `greeting` and it's type `String`. By adding the attribute `data-hello-greeting-value="Welcome"` to the div element, the value `"Welcome"`is assigned to the `greetingValue` variable in the controller. This value can then be accessed in the controller code.
 
 ```javascript
 // /app/javascript/controllers/hello_controller.js
@@ -136,17 +134,24 @@ Stimulus provides a set of lifecycle methods that can be used to execute code wh
   import { Controller } from 'stimulus';
 
   export default class extends Controller {
-    constructor(...) {
-      super(...);
-      // This code is executed when an instance is created
+    initialize()	{
+      // Once, when the controller is first instantiated
+    }
+
+    [name]TargetConnected(target: Element) {
+      // Anytime a target is connected to the DOM
+    }
+
+    [name]TargetDisconnected(target: Element) {
+      // Anytime a target is disconnected from the DOM
     }
 
     connect() {
-      // This code is executed when an instance is connected to the DOM
+      // This code is executed when an controller is connected to the DOM
     }
 
     disconnect() {
-      // This code is executed when an instance is disconnected from the DOM
+      // This code is executed when an controller is disconnected from the DOM
     }
   }
 ```
