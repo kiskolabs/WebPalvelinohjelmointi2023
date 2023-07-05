@@ -9,7 +9,7 @@ It works well with Rails and uses the latest browser technologies to provide a f
 Pros:
 
 - Helps reduce the amount of JavaScript that needs to be written in order to achieve common functionality.
-- Provides a clear API for dispatching and listening to events on the page.
+- Provides a clear and easy-to-use API for dispatching and listening to events on the webpage.
 - Can improve performance by avoiding some of the overhead associated with a full JavaScript framework.
 
 Cons:
@@ -382,8 +382,8 @@ export default class extends Controller {
 
 ## Exercise 1
 
-1. Add select all checkbox to users ratings partial
-2. Create method to the Stimulus ratings -controller to handle click event and select and deselect all the ratings
+1. Add select all checkbox input to the users ratings partial
+2. Create method to the Stimulus ratings -controller to handle click event and select/deselect all the ratings
 
 </blockquote>
 
