@@ -227,7 +227,7 @@ You can initialize rspec in your application running the following from command 
 
 The initialization creates a folder /spec in the application and the various tests – or specs – will be placed in its subfolders.
 
-According to Rails standard but currently less common testing framework, the test are place in the folder /test. The folder will be useless after taking rspec, and you can delete it.
+According to Rails standard but currently less common testing framework, the tests are placed in the folder /test. The folder will be useless after taking up rspec as the only testing tool, and you can delete it.
 
 The tests – the correct words would be specs or specifications when it comes to rspec, we will be using the word test in the future however – can be written at different levels: unit tests for models and controllers, view tests, and integration tests for controllers. In addition to these, the application can be tested using a simulated browser with the help of the capybara gem https://github.com/jnicklas/capybara.
 
@@ -663,7 +663,7 @@ FactoryBot.create(:user)
 FactoryBot.create(:user, username: 'Vilma')
 ```
 
-More instructions for using FactoryBot at https://www.rubydoc.info/gems/factory_bot/file/GETTING_STARTED.md
+More instructions for using FactoryBot at https://thoughtbot.github.io/factory_bot/
 
 ## Users favourite beers, breweries, and styles
 
@@ -744,7 +744,7 @@ end
 
 Your test will not succeed, because your method does not do anything so far, and its return value is always <code>nil</code>.
 
-Use [in the spirit of TDD](https://stanislaw.github.io/2016/01/25/notes-on-test-driven-development-by-example-by-kent-beck.html) a "fake solution", without trying to make the final working version yet:
+Use [in the spirit of TDD](https://stanislaw.github.io/2016-01-25-notes-on-test-driven-development-by-example-by-kent-beck.html) a "fake solution", without trying to make the final working version yet:
 
 ```ruby
 class User < ApplicationRecord
@@ -758,7 +758,15 @@ class User < ApplicationRecord
 end
 ```
 
-Make another test which will force you to make a real implementation [(see triangulation)](https://stanislaw.github.io/2016/01/25/notes-on-test-driven-development-by-example-by-kent-beck.html):
+Make another test which will force you to make a real implementation [(see triangulation)](https://stanislaw.github.io/2016-01-25-notes-on-test-driven-development-by-example-by-kent-beck.html#triangulation):
+
+> How do you most conservatively drive abstraction with tests? Abstract only when you have two or more examples. (p.153)
+>
+> If two receiving stations at a known distance from teach other can both measure the direction of a radio signal, then there is enough information to calculate the range and bearing of the signal. This calculation is called Triangulation.
+>
+> By analogy when we triangulate, we only generalize code when we have two examples or more... When the second example demands a more general solution, then and only then do we generalize (p.16).
+>
+> I only use Triangulation when I'm really, really unsure about the correct abstraction for the calculation. Otherwise I rely on either Obvious Implementation or Fake It. (p.154)
 
 ```ruby
 it "is the one with highest rating if several rated" do
@@ -817,6 +825,7 @@ If you look at the documentation (http://guides.rubyonrails.org/active_record_qu
 ```ruby
 def favorite_beer
   return nil if ratings.empty?
+
   ratings.order(score: :desc).limit(1).first.beer
 end
 ```
@@ -1126,7 +1135,7 @@ If/when you ran into problems:
 >
 >Add information about the user's favourite style to their page.
 >
-> Do not do everything with one method (unless you solve the problem at database level with ActiveRecord or another elegantly compact solution), instead, define the suitable auxiliary methods! If you notice that you method is more than 6 lines long, you are doing either too much or something too complicated, so refactor your code. Ruby's collections have various auxiliary methods which might be useful for the exercise, see http://http://ruby-doc.org/core-2.5.1/Enumerable.html
+> Do not do everything with one method (unless you solve the problem at database level with ActiveRecord or another elegantly compact solution), instead, define the suitable auxiliary methods! If you notice that you method is more than 6 lines long, you are doing either too much or something too complicated, so refactor your code. Ruby's collections have various auxiliary methods which might be useful for the exercise, see https://docs.ruby-lang.org/en/3.2/Enumerable.html
 
 > ## Exercise 4
 >
@@ -1360,7 +1369,7 @@ The test expects that clicking the _Create user_ button will cause the number of
 You will have to take into consideration a small detail, that is, the method <code>expect</code> can be given parameters in two ways.
 If the method has to test a value, the value is given between brackets, like <code>expect(current_path).to eq(signin_path)</code>. Instead, if it tests the impact of an operation (like the one above, <code>click_button('Create User')</code>) on the value of an application object (<code>User.count</code>), the operation to execute is given to <code>expect</code> in a code chunk.
 
-Read more about this in Rspec documentation https://relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
+Read more about this in Rspec documentation https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
 
 So the last test checked whether the operation executed at browser level created an object in the database. Should you make a separate test to see whether a username can sign in the system? Maybe. After all, the previous test did not questioned whether the user object was saved in the database correctly.
 
@@ -1403,7 +1412,7 @@ end
 The test builds its brewery, two beers and a user with the method <code>let!</code> instead of <code>let</code> which we used earlier. In fact, the version without exclamation mark does not execute the operation immediately, but only once the code refers to the object explicitly. The object <code>beer1</code> is mentioned only at the end of the code, so if you had created it with the method <code>let</code>, you would have run into a problem creating the rating, because its beer would have not existed in the database yet, and the corresponding select element would not have been found.
 
 
-The code contained in the <code>before</code> chunk of the test helps users to sign in the system. Most probably, the same code chunk will be useful in various different test files. You had better extract the test code needed in various different places and make a [module](https://relishapp.com/rspec/rspec-core/docs/helper-methods/define-helper-methods-in-a-module), which can be included in all test files which need it. Create a module <code>Helpers</code> in a file named _helpers.rb_ in the _specs_ directory and put the sign-in code there:
+The code contained in the <code>before</code> chunk of the test helps users to sign in the system. Most probably, the same code chunk will be useful in various different test files. You had better extract the test code needed in various different places and make a [module](https://rspec.info/features/3-12/rspec-core/helper-methods/modules/), which can be included in all test files which need it. Create a module <code>Helpers</code> in a file named _helpers.rb_ in the _specs_ directory and put the sign-in code there:
 
 ```ruby
 module Helpers

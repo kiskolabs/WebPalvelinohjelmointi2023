@@ -1,10 +1,16 @@
-**Note: This part of the course is still in beta testing. You can already try the material and exercises, but they cannot be submitted yet and the exercises can change before they are released.**
+You will continue to develop your application from the point you arrived at the end of week 7. The material that follows comes with the assumption that you have done all the exercises of the previous week. In case you have not done all of them, you can take the sample answer of the previous week from the submission system.
 
-You will continue to develop your application from the point you arrived at the end of week 6. The material that follows comes with the assumption that you have done all the exercises of the previous week. In case you have not done all of them, you can take the sample answer to the previous week from the submission system.
+This part is graded separately from the "base course". The part has 17 exercises. You need to complete 16 of those to get the ECTS credit registered. 
+
+This part is provided by four awesome developers from Kisko Labs: [Eetu Mattila](https://github.com/zHarrowed), [Teemu Palokangas](https://github.com/palokangas), [Teemu Tammela](https://github.com/teemutammela), and [Kimmo Salonen](https://github.com/KimmoSalonen). [Kisko Labs](https://www.kiskolabs.com/en/) is a consultancy firm based in Helsinki, which has successfully used Ruby on Rails in various customer products for more than a decade. Check out [this video](https://www.youtube.com/watch?v=qyWdcRQfqI4&t=1s) for more!
+
+## Prerequisites
+
+Two of the three topics covered in this part are using just Ruby. The last topic (Stimulus) uses JavaScript and also some browser DOM APIs. If you have no experience using JavaScript on the browser side, the last topic might be quite challenging.
 
 ## Hotwire
 
-Ruby on Rails version 7.x introduces a new functionality called [Hotwire](https://hotwired.dev/), aimed at simplifying the creation of dynamic views with minimal reliance on Javascript. Hotwire empowers Rails developers to incorporate partial reloading of user interface elements in a similar fashion to popular Javascript libraries like [React](https://react.dev/), all while leveraging the familiar syntax of the Ruby language.
+Ruby on Rails version 7.x introduces a new functionality called [Hotwire](https://hotwired.dev/), aimed at simplifying the creation of dynamic views with minimal reliance on JavaScript. Hotwire empowers Rails developers to incorporate partial reloading of user interface elements in a similar fashion to popular JavaScript libraries like [React](https://react.dev/), all while leveraging the familiar syntax of the Ruby language.
 
 ### Why Hotwire?
 
@@ -12,7 +18,7 @@ Throughout its history, the Rails framework has been renowned for its ability to
 
 To meet these expectations, developers have had to rely on additional software tools, such as the React library, to build the necessary functionality. Unfortunately, this approach adds complexity to the applications and often diminishes the role of the View component within the Rails [MVC](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) architecture, reducing it to merely serving as a [REST](https://en.wikipedia.org/wiki/Representational_state_transfer) or [GraphQL](https://en.wikipedia.org/wiki/GraphQL) API.
 
-With the introduction of Hotwire, Rails aims to tackle the challenges posed by the rapidly evolving Javascript landscape. This is in contrast to the more steadily-paced Ruby ecosystem, which tends to favor incremental and conservative evolution. Hotwire offers a more streamlined and cohesive approach to fulfilling the requirements of full-featured, full-stack applications. It achieves this by eliminating the reliance on disparate tools and aligning with the ethos of Rails as a comprehensive platform for web application development. Hotwire provides the tools to construct dynamic and interactive user experiences while maintaining consistency with the familiar Rails paradigms.
+With the introduction of Hotwire, Rails aims to tackle the challenges posed by the rapidly evolving JavaScript landscape. This is in contrast to the more steadily-paced Ruby ecosystem, which tends to favor incremental and conservative evolution. Hotwire offers a more streamlined and cohesive approach to fulfilling the requirements of full-featured, full-stack applications. It achieves this by eliminating the reliance on disparate tools and aligning with the ethos of Rails as a comprehensive platform for web application development. Hotwire provides the tools to construct dynamic and interactive user experiences while maintaining consistency with the familiar Rails paradigms.
 
 ## Introduction to Hotwire Components
 
@@ -28,17 +34,285 @@ Hotwire encompasses three core components, each serving a specific purpose: Turb
 
 2. **Stimulus**
 
-Stimulus is a lightweight Javascript framework that enhances interactivity and user interactions in server-rendered HTML views. By attaching JavaScript behavior to HTML elements, it improves the user experience without complex frameworks or extensive coding.
+Stimulus is a lightweight JavaScript framework that enhances interactivity and user interactions in server-rendered HTML views. By attaching JavaScript behavior to HTML elements, it improves the user experience without complex frameworks or extensive coding.
 
 3. **Strada**
 
 Strada is an extension of Hotwire that allows developers to build iOS and Android applications using Rails and Turbo. Currently, Strada is being developed as separate repositories: [turbo-ios](https://github.com/hotwired/turbo-ios) for iOS and [turbo-android](https://github.com/hotwired/turbo-android) for Android, respectively.
 
-## Pagination
+## Turbo Frames, getting ready
 
-Before jumping into the Hotwire components in detail, let's take a slight detour. After last week's [increased amount of beers](https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/english/week7.md#server-caching-functionality) you start to wonder that it would be kinda nice to have a pagination for our beers page. Let's add it first without utilizing Hotwire features.
+Before we start, let us simplify our app a bit. Start by removing the mini profiler by deleting the following line from <i>Gemfile</i>
 
-First we start by adding links for previous and next pages to the end of our beers table in `/beers/index.html.erb`:
+```
+gem 'rack-mini-profiler'
+```
+
+and by running _bundle install_. 
+
+Let us also remove all the code that is implementing the [server-side caching](https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/english/week7.md#server-caching-functionality). So from the view templates, we get rid of all the the _cache_ elements that wrap the real page content. Eg. in _views/beers/index.html.erb_ we should get rid of this element that wraps the real content:
+
+```html
+<h1>Beers</h1>
+
+<% cache "beerlist-#{@order}", skip_digest: true do %>
+  <div id="beers">
+    <table class="table table-striped table-hover">
+       ...
+    </table>
+  </div>
+<% end %>
+```
+
+and from the corresponding controllers, the guards that prevent full page render should also be removed. Eg. in the _controllers/beers.rb_ the change is the following: 
+
+```ruby
+  def index
+    @order = params[:order] || 'name'
+
+    # remove this line:
+    return if request.format.html? && fragment_exist?("beerlist-#{@order}")
+
+    @beers = Beer.all
+
+    @beers = case @order
+      when "name" then @beers.sort_by(&:name)
+      when "brewery" then @beers.sort_by { |b| b.brewery.name }
+      when "style" then @beers.sort_by { |b| b.style.name }
+      when "rating" then @beers.sort_by(&:average_rating).reverse
+    end
+  end
+```
+
+Now we are ready to begin!
+
+### The first steps
+
+Turbo Frames provide a convenient way to update specific parts of a page upon request, allowing us to focus on updating only the necessary content while keeping the rest of the page intact.
+
+Let us add a Turbo Frame that contains a link element to the bottom of the styles page, that is, to the view _views/styles/index.html.erb_:
+
+```html
+<h1>Styles</h1>
+
+<div id="styles">
+  <% @styles.each do |style| %>
+    <p>
+      <%= link_to style.name, style %>
+    </p>
+  <% end %>
+</div>
+
+<%= link_to "New style", new_style_path %>
+
+<br><br>
+
+<%= turbo_frame_tag "about_style" do %>
+  <%= link_to "about", styles_path %>
+<% end %>
+```
+
+The Turbo Frame is created with a helper function <i>turbo_frame_tag</i> that has an identifier as a parameter. We use now the string _"about_style_"_ as the identifier.
+
+The generated HTML looks like the following:
+
+![image](../images/8-1.png)
+
+So the frame has just a link element that points back to the page itself. We intend to show some information about beer styles within the Turbo Frame when the user clicks the link.
+
+Let us now create a partial */views/styles/_about.html.erb* that also has the same Turbo Frame ID:
+
+![image](../images/8-2.png)
+
+Now when the user clicks the link, that creates a GET request to the same URL and the request is handled by the function _index_ of the _beers_ controller. We can use the helper function *turbo_frame_request?* to detect the Turbo request and handle it accordingly:
+
+```rb
+class StylesController < ApplicationController
+
+  def index
+    if turbo_frame_request?
+      # this was a request from the Turbo Frame
+      render partial: 'about'
+    else
+      # this was a normal requesst
+      @styles = Style.all
+    end
+  end
+
+  // ...
+end
+```
+
+So in case of a turbo request (that is link "about" is clicked), instead of a full page reload only the partial <i>about</i> is rendered. 
+
+From the console, we can also see, that the GET request caused by the link clicking within the frame has a special header _Turbo frame_ that tells the Rails controller to treat the request as a turbo request and **not** cause a full page reload:
+
+![image](../images/8-3.png)
+
+We are now using the index controller function both for rendering the whole styles page and for the partial that renders the about information. Let us separate the partial rendering to on own controller function. The *routes.rb* extends as follows
+
+```rb
+Rails.application.routes.draw do
+  resources :styles do
+    get 'about', on: :collection
+  end
+  # ...
+end
+```
+
+The controller cleans up a bit:
+
+```rb
+class StylesController < ApplicationController
+  before_action :set_style, only: %i[show edit update destroy]
+
+  def index
+    # now this takes only care of the full page reloads
+    @styles = Style.all
+  end
+
+  # own controller function for the partial
+  def about 
+    render partial: 'about'
+  end
+  # ...
+end
+```
+
+The link is changed accordingly:
+
+```html
+<%= turbo_frame_tag "about_style" do %>
+  <%= link_to "about", about_styles_path %>
+<% end %>
+```
+
+#### Rendering style details on demand
+
+Instead of having just an individual page for each style, let us show the style details on the styles page when the user clicks a style name on the list. We start by wrapping the style list in a Turbo Frame:
+
+```html
+<h1>Styles</h1>
+
+<div id="styles">
+  <%= turbo_frame_tag "styles" do %>
+    <% @styles.each do |style| %>
+      <%= link_to style.name, style %>
+    <% end %>
+  <% end %>
+</div>
+```
+
+We add the following to partial *_details.html.erb* that shows besides the style name, its description and the beers of that style:
+
+```html
+<%= turbo_frame_tag "styles" do %>
+  <h3><%= style.name %></h3>
+  <p>
+    <strong>Description:</strong>
+    <%= style.description %>
+  </p>
+
+  <h4>beers</h4>
+
+  <ul>
+    <% @style.beers.each do |beer| %>
+      <li>
+        <%= link_to beer.name, beer %>
+      </li>
+    <% end %>
+  </ul>  
+<% end %>
+```
+
+Clicking a style name now causes a Turbo Frame request for a single style, and the controller is altered to render the above partial in this case:
+
+```rb
+class StylesController < ApplicationController
+  # ...
+
+  def show
+    if turbo_frame_request?
+      render partial: 'details', locals: { style: @style } 
+    end
+    # the default is a full page reload
+  end
+
+  # ...
+end
+```
+
+Notice now that the partial is given the _style_ as a variable!
+
+Now when a style name is clicked, the list of styles is **replaced** with the details of a particular style.
+
+#### Targetting a different frame
+
+This is perhaps not quite what we want. Instead, let the style list remain visible all the time, and add a new Turbo Frame (with ID "style_details") where the details of the clicked style are shown:
+
+```html
+<div id="styles">
+  <%= turbo_frame_tag "styles" do %>
+    <% @styles.each do |style| %>
+      <%= link_to style.name, style, data: { turbo_frame: "style_details" } %>
+    <% end %>
+  <% end %>
+
+  <%= turbo_frame_tag "style_details" do %>
+  <% end %>  
+</div>
+
+<%= link_to "New style", new_style_path %>
+</div>
+```
+
+Since we now want to target a _different_ Turbo Frame instead of the one where links reside, we must define the targeted frame as an attribute. As seen from the above snippet it is done as follows:
+
+```html
+link_to style.name, style, data: { turbo_frame: "style_details" }
+```
+
+The Turbo Frame tag in the partial _details.html.erb needs to be changed accordingly:
+
+```html
+<%= turbo_frame_tag "style_details" do %>
+  <h3><%= style.name %></h3>
+  <p>
+    <strong>Description:</strong>
+    <%= style.description %>
+  </p>
+
+  # ...
+<% end %>
+```
+
+The result is finally as we expected it to be:
+
+![image](../images/8-4.png)
+
+### A very important thing to remember
+
+It is **EXTREMELY IMPORTANT** to follow all the possible error messages, in the Rails console and the network tab of the browser especially when working with the Hotwire. For unknown reasons, some beginners do not believe this and end up in deep trouble. Do not even think taking that dark path... 
+
+<blockquote>
+
+## Exercise 1
+
+Extend the user page so that when clicking a rating, the basic info of the rated beer is shown.
+
+Note: it is **EXTREMELY IMPORTANT** to follow all the possible error messages, in the Rails console and the network tab of the browser!
+
+</blockquote>
+Your solution could look like this:
+
+![image](../images/8-5.png)
+
+### Pagination
+
+Before continuing with the Hotwire further, let's take a slight detour. After last week's [increased amount of beers](https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/english/week7.md#server-caching-functionality), you start to wonder that it would be kind of nice to have a pagination for our beers page. Let's add it first without utilizing Hotwire features.
+First, we start by adding links for the previous and next pages to the end of our beer table:
+
+**app/views/beers/index.html.erb**
 
 ```html
 <table class="table table-striped table-hover">
@@ -61,77 +335,51 @@ First we start by adding links for previous and next pages to the end of our bee
 </table>
 ```
 
-Our links don't do much yet so let's add some logic to the controller as well. Last week we defined ordering of the beers in our controller like so:
+Our links don't do much yet so let's add some logic to the controller as well. Last week we defined the ordering of the beers in our controller as so:
+
+**app/controllers/beers_controller.rb**
 
 ```ruby
 def index
-  @beers = Beer.includes(:brewery, :style, :ratings).all
+  @order = params[:order] || 'name'
 
-  order = params[:order] || 'name'
-
-  @beers = case order
-            when 'name' then @beers.sort_by(&:name)
-            when 'brewery' then @beers.sort_by{ |b| b.brewery.name }
-            when 'style' then @beers.sort_by{ |b| b.style.name }
-            when "rating" then @beers.sort_by(&:average_rating).reverse
-            end
-end
-```
-
-Which contains a bit of a problem. Method `sort_by` will load all the beers to central memory as an array and only then sort the order. But now we would want to fetch only limited amount of records from the database at a time, only what is needed for the current page. There's no sense fetching all the beers. That's why we'll opt out for using ActiveRecord SQL queries instead for ordering:
-
-```ruby
-def index
-  @beers = Beer.includes(:brewery, :style, :ratings).all
-
-  order = params[:order] || 'name'
+  @beers = Beer.all
 
   @beers = case @order
-           when "name" then @beers.order(:name)
-           when "brewery" then @beers.joins(:brewery).order("breweries.name")
-           when "style" then @beers.joins(:style).order("styles.name")
-           when "rating" then @beers.left_joins(:ratings)
-                                    .select("beers.*, avg(ratings.score)")
-                                    .group("beers.id")
-                                    .order("avg(ratings.score) DESC")
-           end  
+    when "name"    then @beers.sort_by(&:name)
+    when "brewery" then @beers.sort_by { |b| b.brewery.name }
+    when "style"   then @beers.sort_by { |b| b.style.name }
+    when "rating"  then @beers.sort_by(&:average_rating).reverse
+    end
 end
 ```
 
-This will allow us to use ActiveRecord methods `limit` and `offset` to fetch only the wanted amount of records from the database at a time. We can set the wanted amount per page to top our `beers_controller.rb` via constant:
+This approach contains a bit of a problem. The code loads all the beers to the main memory as an array and only then uses `sort_by` to get the appropriate order. But now we would want to fetch only a limited amount of records from the database at a time, only what is needed for the current page. There's no sense fetching all the beers. That's why we'll opt for using ActiveRecord SQL queries for the ordering.
+
+Let us at first forget about the different orderings and get the pagination to work for beers ordered by name. The controller changes as follows:
 
 ```ruby
 class BeersController < ApplicationController
   PAGE_SIZE = 20
+
+  def index
+    @order = params[:order] || 'name'
+    @page = params[:page]&.to_i || 1
+    @last_page = (Beer.count / PAGE_SIZE.to_f).ceil
+    offset = (@page - 1) * PAGE_SIZE
+
+    @beers = Beer.order(:name).limit(PAGE_SIZE).offset(offset)
+  end
+
   # ...
 end
 ```
 
-After that we can define our `index` method like so:
+We are using a combination of ActiveRecord [order](https://edgeguides.rubyonrails.org/active_record_querying.html#ordering), [limit and offset](https://edgeguides.rubyonrails.org/active_record_querying.html#limit-and-offset) to control what page of the ordered beers is queried from the database. 
 
-```ruby
-def index
-    @order = params[:order] || 'name'
-    @page = params[:page]&.to_i || 1
-    @last_page = (Beer.count / PAGE_SIZE).ceil
-    return if request.format.html? && fragment_exist?("beerlist-#{@order}")
+Pay attention to the `@last_page` instance variable as we are going to need it in our view. Now we are going to add the new `@page` instance variable to all of our links in the index and redefine our previous and next page links:
 
-    @beers = Beer.includes(:brewery, :style, :ratings).all
-
-    @beers = case @order
-             when "name" then @beers.order(:name)
-             when "brewery" then @beers.joins(:brewery).order("breweries.name")
-             when "style" then @beers.joins(:style).order("styles.name")
-             when "rating" then @beers.left_joins(:ratings)
-                                      .select("beers.*, avg(ratings.score)")
-                                      .group("beers.id")
-                                      .order("avg(ratings.score) DESC")
-             end
-    @beers = @beers.limit(PAGE_SIZE).offset((@page - 1) * PAGE_SIZE)
-end
-```
-
-Pay attention to the `@last_page` instance variable as we are going to need it in our view. Now we are going to add the new `@page` instance variable to all of our links in the index and redefine our previous and next page links.
+**app/views/beers/index.html.erb**
 
 ```html
 <table class="table table-striped table-hover">
@@ -166,42 +414,114 @@ Pay attention to the `@last_page` instance variable as we are going to need it i
 </table>
 ```
 
-Remember to also update our cache key to include our new `@page` variable:
+Pagination works now nicely with the default ordering! We need a bit more advanced use of ActiveRecord to get the other orders to work.
 
-```html
-<% cache "beerlist-#{@page}-#{@order}", skip_digest: true do %>
+When ordering based on a brewery name or style name, we can not just use the data in the beer object, we must do an SQL [join](https://edgeguides.rubyonrails.org/active_record_querying.html#joining-tables) to get the associated rows from the database and to do the ordering based on the fields of those. The controller extends as follows:
+
+```ruby
+class BeersController < ApplicationController
+  PAGE_SIZE = 20
+
+  def index
+    @order = params[:order] || 'name'
+    @page = params[:page]&.to_i || 1
+    @last_page = (Beer.count / PAGE_SIZE.to_f).ceil
+    offset = (@page - 1) * PAGE_SIZE
+
+    @beers = case @order
+      when "name"    then Beer.order(:name)
+        .limit(PAGE_SIZE).offset(offset)
+      when "brewery" then Beer.joins(:brewery)
+        .order("breweries.name").limit(PAGE_SIZE).offset(offset)
+      when "style"   then Beer.joins(:style)
+        .order("styles.name").limit(PAGE_SIZE).offset(offset)
+    end
+
+  end
+
+  # ...
+end
 ```
 
-![image](../images/ratebeer-w8-1.png)
+So now depending on the order the user wants, a different kind of query is executed to get a page of beers.
 
-And voilà! We have working pagination for our beers. But one thing that is kinda annoying is that when we navigate between the pages, the whole pages gets reloaded with menus and all even though the contents of the table are the only thing changing. Here is where we come to where Turbo Frames can help us...
+The last one, ordering by ratings is the most tricky case. One way to achieve the functionality is shown below. The required SQL mastery is beyond the objectives of this course, so you may just copy-paste the code and believe that it works.
 
-## Turbo Frames
+```ruby
+class BeersController < ApplicationController
+  PAGE_SIZE = 20
 
-Turbo Frames provide a convenient way to update specific parts of a page upon request, allowing us to focus on updating only the necessary content while keeping the rest of the page intact.
+  def index
+    @order = params[:order] || 'name'
+    @page = params[:page]&.to_i || 1
+    @last_page = (Beer.count / PAGE_SIZE.to_f).ceil
+    offset = (@page - 1) * PAGE_SIZE
 
-To begin, let's create a new partial called `_beers_page.html.erb` to the folder `app/views/beers` and extract the table containing the beers from our `beers/index.html.erb` file. This way, our `index.html.erb` will appear as follows:
+    @beers = case @order
+      when "name"    then Beer.order(:name)
+        .limit(PAGE_SIZE).offset(offset)
+      when "brewery" then Beer.joins(:brewery)
+        .order("breweries.name").limit(PAGE_SIZE).offset(offset)
+      when "style"   then Beer.joins(:style)
+        .order("styles.name").limit(PAGE_SIZE).offset(offset)
+      when "rating"  then Beer.left_joins(:ratings)
+        .select("beers.*, avg(ratings.score)")
+        .group("beers.id")
+        .order("avg(ratings.score) DESC").limit(PAGE_SIZE).offset(offset)
+    end
+
+  end
+
+  # ...
+end
+```
+
+And voilà! We have a working pagination for our beers. But one kinda annoying thing is that when we navigate between the pages, the whole page gets reloaded with menus and all even though the contents of the table are the only thing changing. Here is where we come to where Turbo Frames can help us...
+
+The controller code has now a slightly ugly feature, it contains repetition, eg. the following piece of code is repeated many times:
+
+```rb
+.limit(PAGE_SIZE).offset(offset)
+```
+
+It would be possible to clean up the repetition, but we will leave that as a volunteer exercise.
+
+<blockquote>
+
+## Exercise 2
+
+Change the ratings page to show *all* ratings in a paginated form. The default order is to show the most recent rating first. Add a button that allows reversing the order.
+
+</blockquote>
+
+Your solution could look like the following:
+
+![image](../images/8-6.png)
+
+### Turbo framing the beer list
+
+To begin, let's create a new partial called `_beer_list.html.erb` to the folder `app/views/beers` and extract the table containing the beers from our `beers/index.html.erb` file. 
+
+This way, our `index.html.erb` will appear as follows:
 
 **app/views/beers/index.html.erb**
 
 ```html
 <h1>Beers</h1>
 
-<% cache "beerlist-#{@page}-#{@order}", skip_digest: true do %>
-  <div id="beers">
-    <%= render "beers_page", beers: @beers, page: @page, order: @order, last_page: @last_page  %>
-  </div>
-<% end %>
+<div id="beers">
+  <%= render "beer_list", beers: @beers, page: @page, order: @order, last_page: @last_page  %>
+</div>
 
 <%= link_to('New Beer', new_beer_path) if current_user %>
 ```
 
-Once the above is functioning correctly, we can enclose our table within the `_beers_page.html.erb` partial using a turbo frame:
+Once the above is functioning correctly, we can enclose our table within the `_beer_list.html.erb` partial using a Turbo Frame:
 
-**app/views/beers/\_beers_page.html.erb**
+**app/views/beers/\_beer_list.html.erb**
 
 ```html
-<%= turbo_frame_tag "beers_page" do %>
+<%= turbo_frame_tag "beer_list_frame" do %>
   <table class="table table-striped table-hover">
     <!-- ... -->
   </table>
@@ -214,7 +534,7 @@ By using a Turbo Frame, all links and buttons within it will be controlled by Tu
 def index
   # ...
   if turbo_frame_request?
-    render partial: "beers_page",
+    render partial: "beer_list",
       locals: { beers: @beers, page: @page, order: @order, last_page: @last_page }
   else
     render :index
@@ -222,19 +542,25 @@ def index
 end
 ```
 
-The `turbo_frame_request?` condition ensures that when the request is made within a Turbo Frame, only the partial containing our beer table is returned. We can now observe the behavior within the network tab of our browser's developer tools.
+The `turbo_frame_request?` condition ensures that when the request is made within a Turbo Frame, only the partial containing our beer table is returned. We can now observe the behavior within the network tab of our browser's developer tools:
 
-![image](../images/ratebeer-w8-2.png)
+![image](../images/8-7.png)
 
-We can see that the headers include the ID of the Turbo Frame we are targeting, allowing Turbo to identify which part of the page should be replaced.
+We can see that the headers include the ID of the Turbo Frame we are targeting, allowing Turbo to identify which part of the page should be replaced with the response data:
 
-![image](../images/ratebeer-w8-3.png)
+![image](../images/8-8.png)
 
-Indeed, the response contains only the partial and excludes the application layout that accompanies the HTML document. Turbo automatically handles this aspect.
+Indeed, the response contains only the partial and excludes the application layout that accompanies the HTML document. The Turbo magic automatically handles this aspect.
 
-The only remaining issue is that the links to beers, breweries, and styles are no longer functional. Turbo attempts to load the links and replace our table with their content but fails to find a suitable turbo tag for replacement. We can easily resolve this by adding the target attribute to our links:
+The only remaining issue is that the links to beers, breweries, and styles are no longer functional. If we eg. click a beer name, the response looks as follows:
 
-**app/views/beers/\_beers_page.html.erb**
+![image](../images/8-9.png)
+
+Turbo attempts to replace our table with their content but fails to find a suitable turbo tag (*beer_list_frame*) for replacement so it simply renders nothing within the frame.
+
+We can easily resolve this by adding a suitable target attribute to our links:
+
+**app/views/beers/\_beer_list.html.erb**
 
 ```html
 <% beers.each do |beer| %>
@@ -247,35 +573,123 @@ The only remaining issue is that the links to beers, breweries, and styles are n
 <% end %>
 ```
 
-The `target="_top"` signifies that Turbo should break out of the frame and replace the entire page with the opened link. Alternatively, the `target` could be set to `_self`, targeting the current frame, or the ID of another Turbo Frame, in which case Turbo would attempt to replace that specific frame.
+The `turbo_frame="_top"` signifies that Turbo should break out of the frame and replace the entire page with the opened link. As seen from the earlier examples we can also use an ID of another Turbo Frame here, in which case Turbo would attempt to replace that specific frame.
 
 We also notice that the URL remains unchanged when navigating between pages, and using the browser's back button may lead to unexpected results. We can easily address this by promoting our Turbo Actions into visits:
 
-**app/views/beers/\_beers_page.html.erb**
+**app/views/beers/\_beer_list.html.erb**
 
 ```html
-<%= turbo_frame_tag "beers_page", data: { turbo_action: "advance" } do %>
+<%= turbo_frame_tag "beer_list_frame", data: { turbo_action: "advance" } do %>
 ```
 
-Under the hood, Turbo utilizes JavaScript to manipulate the [HTML DOM](https://www.w3schools.com/js/js_htmldom.asp) of the page, eliminating the need for us to write any JavaScript code ourselves!
+#### Asynchronous frame
+
+Let's say we want to suggest a beer to the user based on how they've rated other beers. Calculating the recommendation might take a long time, which is why we decided to load it asynchronously. So initially when the user goes to their own page, it just shows a "loading indicator", and when the recommendation is ready, that gets rendered to the page.
+
+This can be achieved with Turbo frames with a <i>src</i> attribute:
+
+```rb
+  <%= turbo_frame_tag "beer_recommendation_tag", src: recommendation_user_path do %>
+    calculating the recommendation...
+  <% end %>
+```
+
+Now initially only the text <i>calculating the recommendation...</i> is rendered. After the page is rendered Turbo makes an HTTP GET request to the specified path (users/id/recommendation) and fills in the HTML that it gets as a response. The partial for the recommendation looks the following:
+
+**views/users/_recommendation.html.erb**
+
+```html
+<%= turbo_frame_tag "beer_recommendation_tag" do %>
+  <div>
+    <h4>Recommendation based on your ratings</h4>
+
+    <p><%= link_to beer.name, beer %> by <%= link_to beer.brewery.name, beer.brewery %></p>
+  </div>
+<% end %>
+```
+
+We will need a route and controller for the recommendation. The route (in *routes.rb*) is defined as follows:
+
+```rb
+resources :users  do
+  post 'toggle_closed', on: :member
+  get 'recommendation', on: :member
+end
+```
+
+The controller finds out the recommendation (that is in our case just a randomly picked beer) and renders the partial. We have added a sleep of 2 seconds to simulate that calculating the recommendation takes a bit of time:
+
+```rb
+class UsersController < ApplicationController
+  # ...
+
+  def recommendation
+    # simulate a delay in calculating the recommendation
+    sleep(2)
+    ids = Beer.pluck(:id)
+    # our recommendation us just a randomly picked beer...
+    random_beer = Beer.find(ids.sample)
+    render partial: 'recommendation', locals: { beer: random_beer } 
+  end
+
+  # ...
+end
+```
+
+Now when the user navigates to their own page, there is an indication that the recommendation is still to be calculated:
+
+![image](../images/8-10.png)
+
+After a while, the HTTP response is ready, and the returned partial containing the recommendation is rendered:
+
+![image](../images/8-11.png)
+
+#### Turbo under the hood
+
+As we have seen at the beginning of this week's material, Turbo Frame blocks are identified and separated with ```id``` tags and caught by the controller with the ```turbo_frame_request?```method. The controller then queries the model for the data needed and sends the updated part of HTML to the view. With the help of ID tags, only the specific part inside ```<turbo-frame>``` is updated without having to refresh the entire page. 
+
+Turbo Frames is built on the concept of [AJAX](https://www.w3schools.com/xml/ajax_intro.asp). In a traditional Rails application, a typical HTTP request (like ```GET```) would involve the controller processing the page load request and querying the model's database before delivering an entire HTML page back to the browser. With AJAX, and by extension Turbo Frames, instead of returning a full HTML page, only a section of the page is updated. This leads to faster loading as the application doesn't have to reload all data from the database. Turbo utilizes JavaScript to manipulate the [HTML DOM](https://www.w3schools.com/js/js_htmldom.asp) of the page, eliminating the need for us to write any JavaScript code ourselves!
 
 <blockquote>
 
-## Exercise 1
+## Exercise 3
 
-`turbo_frame_tag` has an attribute `src` available that will lazy load the contents of the source address into the turbo frame.
+In this and the next exercise, we will refactor the breweries page to render the brewery lists asynchronously.
 
-1. Refactor breweries page so that there is new partial `_breweries_list.html.erb` which is used separately to list breweries under active breweries and retired breweries.
-2. Create new endpoints behind `breweries/active` and `breweries/retired` routes that return the partials for the active and retired breweries respectively.
-3. Use `turbo_frame_tag` with `src` attribute to lazy load active and retired breweries into their respective turbo frames.
-4. Fix the links to breweries so that they work inside the turbo frames.
+Start by refactoring the breweries page so that there is a new partial `_brewery_list.html.erb` which is used separately to list breweries under active breweries and retired breweries.
+
+Create the new endpoint GET `breweries/active` that returns the partial for the active breweries and uses that to render the active breweries asynchronously.
+
+The retired brewery list can still remain as it is.
+
+Note: it is **EXTREMELY IMPORTANT** to follow all the possible error messages, in the Rails console and the network tab of the browser when working with Action Frame!
+
+## Exercise 4
+
+Create also the new endpoint GET `breweries/retired` that returns the partial for the retired breweries and use that also in rendering the breweries page.
+
+The same partial should be used both for active and retired breweries. Note that you **can not** anymore use the **same** Turbo Frame tag for both the active and retired breweries. 
+
+Notice that instead of defining a Turbo Frame tag as a hard-coded string, we can define it also as a variable that you set in the controller:
+
+```rb
+<%= turbo_frame_tag tag_as_a_variable do %>
+  # ...
+<% end %>
+```
+
+This makes it possible to use the same partial to render the contents of many different Turbo frames (that all have their own identifiers).
+
+Fix also the links to breweries so that they work inside the Turbo Frames.
+
 </blockquote>
 
 ## Turbo Streams
 
-The purpose of [Turbo Streams](https://turbo.hotwired.dev/handbook/streams) is to enable page updates in fragments. For example, when a page displays a list of beers, instead of performing a complete page reload, a single beer can be appended or removed from the list in response to a change.
+The purpose of [Turbo Streams](https://turbo.hotwired.dev/handbook/streams) is to enable page updates in fragments. For example, when a page displays a list of breweries and a new beer is added or deleted, instead of performing a full page reload, a single brewery can be appended or removed from the list in response to a change.
 
-In modern web applications, achieving this behavior often involves having a separate server-side REST API or GraphQL API, commonly referred to as the back-end, to provide the necessary information in JSON format. The front-end queries this back-end, receives the JSON data, and renders the required HTML while updating the DOM accordingly.
+In modern web applications, achieving this kind of behavior often involves having a separate server-side REST API or GraphQL API, commonly referred to as the back-end, to provide the necessary information in JSON format. The front-end queries this back-end, receives the JSON data, and renders the required HTML while updating the DOM accordingly by using logic written in JavaScript.
 
 Turbo simplifies this process by streaming pre-rendered HTML, compiled on the back-end, directly to the browser and handling the necessary actions internally.
 
@@ -285,7 +699,7 @@ Key concepts in Turbo Streams include **actions**, **targets**, and **templates*
 
 In Turbo Streams, **actions** are a fundamental concept used to specify the changes or updates that should be performed on the client-side HTML DOM in response to a server-side event. An action represents a specific operation that can be applied to one or more target elements within a Turbo Stream response.
 
-**Actions** are defined using HTML-like syntax and consist of a combination of elements and attributes. Each action includes a target element, which represents the HTML element on the client-side that needs to be updated, and one or more operations that define how the target element should be modified.
+**Actions** are defined using HTML-like syntax and consist of a combination of elements and attributes. Each action includes a target element, which represents the HTML element on the client side that needs to be updated, and one or more operations that define how the target element should be modified.
 
 The operations that can be applied to a target element include:
 
@@ -299,7 +713,7 @@ The operations that can be applied to a target element include:
 
 ### Turbo Streams Targets
 
-In order for **actions** to function properly, Turbo requires the identification of target elements within the DOM. This can be achieved by assigning unique HTML `id` parameters to individual elements or by utilizing `class` parameters to target multiple elements.
+For **actions** to function properly, Turbo requires the identification of target elements within the DOM. This can be achieved by assigning unique HTML `id` parameters to individual elements or by utilizing `class` parameters to target multiple elements.
 
 For identifying a single element, one can explicitly create an ID value in the view or leverage the convenient Rails [dom_id](https://api.rubyonrails.org/classes/ActionView/RecordIdentifier.html) helper, which automatically generates the ID tag. For example:
 
@@ -329,15 +743,15 @@ you could use the remove action to remove all retired breweries from the list by
 
 To leverage the capabilities of Turbo Streams, view templates should be designed as [partials](https://guides.rubyonrails.org/layouts_and_rendering.html#using-partials) that can be rendered individually. This enables targeted streaming of changes to specific components. For example, when streaming updates for breweries and appending new breweries to a list, the brewery row should be implemented as a partial.
 
-To prepare the Breweries index page for streaming, extract the row rendering logic (created in Exercise 1) from `app/views/breweries/_breweries_list.html.erb`:
+To prepare the Breweries index page for streaming, extract the row rendering logic (created in Exercise 1) from `app/views/breweries/_brewery_list.html.erb`:
 
-**app/views/breweries/\_breweries_list.html.erb**
+**app/views/breweries/\_brewery_list.html.erb**
 
 ```html
 <tbody>
   <% breweries.each do |brewery| %>
-    <tr %>">
-      <td><%= link_to brewery.name, brewery, data: { turbo_frame: "_top"} %></td>
+    <tr>
+      <td><%= link_to brewery.name, brewery, data: { turbo_frame: "_top" } %></td>
       <td><%= brewery.year %></td>
       <td><%= brewery.beers.count %></td>
       <td><%= round(brewery.average_rating) %></td>
@@ -351,7 +765,7 @@ To new partial file `app/views/breweries/_brewery_row.html.erb`:
 **app/views/breweries/\_brewery_row.html.erb**
 
 ```html
-<tr %>">
+<tr>
   <td><%= link_to brewery.name, brewery, data: { turbo_frame: "_top"} %></td>
   <td><%= brewery.year %></td>
   <td><%= brewery.beers.count %></td>
@@ -359,7 +773,7 @@ To new partial file `app/views/breweries/_brewery_row.html.erb`:
 </tr>
 ```
 
-And change the original code to use this partial :
+And change the original code to use this partial:
 
 ```html
 <tbody id="<%= status %>_brewery_rows">
@@ -369,19 +783,15 @@ And change the original code to use this partial :
 </tbody>
 ```
 
-Pay attention to new ID that we give to the tbody element. We need `active_brewery_rows` or `retired_brewery_rows` ID to **target** the **action** of appending new breweries as children of the correct table. If in Exercise 1 you did not define local `status` or something similar containing `active`/`retired` information for the different brewery listings, you should do that now as it will help us later.
+Pay attention to the new ID that we give to the tbody element. We need `active_brewery_rows` or `retired_brewery_rows` ID to **target** the **action** of appending new breweries as children of the correct table. If in Exercises 3 and 4 you did not define local `status` or something similar containing `active`/`retired` information for the different brewery listings, you should do that now as it will help us later.
 
 Next, let's enable the addition of new breweries directly from the index page. Replace the following code in `app/views/breweries/index.html.erb`:
-
-**app/views/breweries/index.html.erb**
 
 ```html
 <%= link_to "New brewery", new_brewery_path if current_user %>
 ```
 
 With the following Turbo Frame tag:
-
-**app/views/breweries/index.html.erb**
 
 ```html
 <%= turbo_frame_tag "new_brewery", src: new_brewery_path if current_user %>
@@ -390,8 +800,6 @@ With the following Turbo Frame tag:
 This Turbo Frame will include a part of our existing code from the `new_brewery` path.
 
 In `app/views/breweries/_new.html.erb` specify which part of the view you want to show in the Turbo Frame:
-
-**app/views/breweries/\_new.html.erb**
 
 ```html
 <h1>New brewery</h1>
@@ -402,47 +810,51 @@ In `app/views/breweries/_new.html.erb` specify which part of the view you want t
 # ...
 ```
 
+Now the breweries page looks like this:
+
 ![image](../images/ratebeer-w8-4.png)
 
-In order to append the created beer to the list without doing a full page update, we need to modify the response in the create action of the `app/controllers/breweries_controller.rb` file.
+To append the created brewery to the list without doing a full page update, we need to modify the response in the create action of the `app/controllers/breweries_controller.rb` file.
 
 By adding the `format.turbo_stream` block, we specify that the response should be rendered as a Turbo Stream template with the action of appending the new brewery row to the target element with the ID `active_brewery_rows` or `retired_brewery_rows`. These steps enable the addition of breweries directly from the index page while only appending the created brewery to the list without refreshing the entire page.
 
-**app/controllers/breweries_controller.rb**
-
 ```ruby
-def create
-  @brewery = Brewery.new(brewery_params)
+class BreweriesController < ApplicationController
 
-  respond_to do |format|
-    if @brewery.save
-      format.turbo_stream {
-        status = @brewery.active? ? "active" : "retired"
-        render turbo_stream: turbo_stream.append("#{status}_brewery_rows", partial: "brewery_row", locals: { brewery: @brewery })
-      }
-      format.html { redirect_to brewery_url(@brewery), notice: "Brewery was successfully created." }
-      format.json { render :show, status: :created, location: @brewery }
-    else
-      format.html { render :new, status: :unprocessable_entity }
-      format.json { render json: @brewery.errors, status: :unprocessable_entity }
+  def create
+    @brewery = Brewery.new(brewery_params)
+
+    respond_to do |format|
+      if @brewery.save
+        format.turbo_stream {
+          status = @brewery.active? ? "active" : "retired"
+          render turbo_stream: turbo_stream.append("#{status}_brewery_rows", partial: "brewery_row", locals: { brewery: @brewery })
+        }
+        format.html { redirect_to brewery_url(@brewery), notice: "Brewery was successfully created." }
+        format.json { render :show, status: :created, location: @brewery }
+      else
+        format.html { render :new, status: :unprocessable_entity }
+        format.json { render json: @brewery.errors, status: :unprocessable_entity }
+      end
     end
   end
+
 end
 ```
 
 This change involves one line of code, but under the hood, several components enable this to work:
 
-1. When the browser initiates a new request, the Turbo framework includes the `text/vnd.turbo-stream.html` in the request's `Accept` headers. This informs the server that it expects a Turbo Stream template instead of a full page update.
+1. When the browser initiates a new request, the Turbo framework includes the `text/vnd.turbo-stream.html` in the request's `Accept` headers. This informs the server that it expects a Turbo Stream template instead of a full-page update.
 
 ![image](../images/ratebeer-w8-turbo-streams-header.png)
 
 2. The controller, based on the `Accept` header, recognizes the request's Turbo Stream format and responds by rendering a Turbo Stream template instead of a complete page. This ensures that only the necessary HTML fragments are sent back to the browser.
 
-3. Using the `turbo_stream.append` method, a response HTML fragment is generated with the action set to `append`. This fragment targets the element with the identifier `brewery_rows` and utilizes the `_brewery_row.html.erb` partial to generate the content. Here is an example of the resulting fragment:
+3. Using the `turbo_stream.append` method, a response HTML fragment is generated with the action set to `append`. This fragment targets the element with the identifier `brewery_rows` and utilizes the `_brewery_row.html.erb` partial to generate the content. Here is an example of the resulting fragment (go and see yourself from the developer tools how the response looks):
 
 ```html
-<turbo-stream action="append" target="active_brewery_rows"
-  ><template
+<turbo-stream action="append" target="active_brewery_rows">
+  <template
     ><tr id="brewery_65">
       <td>
         <a data-turbo-frame="_top" href="/breweries/65"
@@ -453,8 +865,8 @@ This change involves one line of code, but under the hood, several components en
       <td>0</td>
       <td>0.0</td>
     </tr></template
-  ></turbo-stream
->
+  >
+</turbo-stream>
 ```
 
 4. With the table body previously assigned an ID, such as `<tbody id="active_brewery_rows">`, Turbo knows to append the generated template as the last child of the table body element. It intelligently places the new content in the appropriate location. You can test this behavior by removing or altering the ID and observing the resulting outcome.
@@ -478,12 +890,27 @@ To publish updates, we utilize the Brewery model `app/models/brewery.rb`. Whenev
 **app/models/brewery.rb**
 
 ```ruby
+class Brewery < ApplicationRecord
+  include RatingAverage
+  extend TopRated
 
-after_create_commit -> { broadcast_append_to "breweries_index", partial: "breweries/brewery_row", target: "active_brewery_rows" }, if: :active?
-after_create_commit -> { broadcast_append_to "breweries_index", partial: "breweries/brewery_row", target: "retired_brewery_rows" }, if: :retired?
+  # ...
+
+  after_create_commit do 
+    target_id = if active
+      "active_brewery_rows"
+    else
+      "retired_brewery_rows"
+    end
+
+    broadcast_append_to "breweries_index", partial: "breweries/brewery_row", target: target_id
+  end
+end
 ```
 
-This code broadcasts an `append` action to the `breweries_index` channel, targeting the element with the ID `active_brewery_rows` or `retired_brewery_rows`. It uses the `_brewery_row.html.erb` partial to create the template for the new beer. Essentially, it replicates the same functionality we implemented earlier by responding to client requests with fragments. However, the difference lies in the fact that the HTML fragment is now broadcasted to all browsers subscribed to the `breweries_index` channel, thanks to the power of WebSockets.
+Ruby on Rails calls the [callback](https://guides.rubyonrails.org/active_record_callbacks.html) function [after_create_commit](https://api.rubyonrails.org/v7.0.8/classes/ActiveRecord/Transactions/ClassMethods.html#method-i-after_commit) always when a new object is created.
+
+The callback function broadcasts an `append` action to the `breweries_index` channel, targeting the element with the ID `active_brewery_rows` or `retired_brewery_rows`. It uses the `_brewery_row.html.erb` partial to create the template for the new brewery. Essentially, it replicates the same functionality we implemented earlier by responding to client requests with fragments. However, the difference lies in the fact that the HTML fragment is now broadcasted to **all browsers** subscribed to the `breweries_index` channel, thanks to the power of WebSockets.
 
 You can test the functionality by opening two browser windows side by side and creating a new brewery. You'll observe that the updates are instantly reflected in both windows, demonstrating the real-time nature of ActionCable and WebSockets.
 
@@ -497,7 +924,7 @@ To address this issue, there are several possible solutions:
 
 1. Comment out the stream template in the HTTP response from the controller. However, this approach has a downside: if there are any issues with WebSockets, the user won't see the effect of submitting a new brewer.
 
-2. Conditionally trigger the `after_create_commit` hook in the model based on the logged-in user. This approach ensures that the user only receives the WebSocket update once.
+2. Conditionally trigger the `after_create_commit` hook in the model based on the logged-in user. This approach ensures that the user only receives the WebSocket update once. This is pretty tricky to implement and would require the use of user-specific streams.
 
 3. Opt for a simpler solution by giving each row a unique identifier. Let's proceed with this approach here.
 
@@ -520,31 +947,59 @@ It's worth noting that in our example, we used a simple string, `breweries_index
 
 <blockquote>
 
-## Exercise 2
+## Exercise 5
 
-Enhance the breweries list functionality by adding a button or text "X" for removing a brewery from the database (see [Rails views documentation](https://guides.rubyonrails.org/layouts_and_rendering.html#rendering-by-default-convention-over-configuration-in-action)). The implementation should follow these steps:
+With Turbo Streams and Action Cable, we are now equipped to create a beer chat for the users of our app!
 
-1. **Initial Removal (No Turbo, Full Page Reload)**
-   Initially, make the removal work without using Turbo, requiring a full page reload after the delete action.
+You need a model for the messages. Each message has the text content and ID of the creator. Note the order of the messages, the most recent is shown at the top!
 
-2. **Dynamic Removal with Turbo Streams**
-   Improve the functionality by dynamically removing the deleted brewery from the list using Turbo Streams. Ensure the removal is reflected in the UI without requiring a full page reload.
-
-3. **WebSocket Integration for Real-Time Updates**
-   Leverage WebSockets to stream the removal action to all connected browsers in real time.
-
-4. **Confirmation Pop-up**
-   Enhance user experience by introducing a confirmation pop-up. When a user clicks the remove button, a confirmation dialog should appear with the text "Are you sure you want to remove brewery X and all beers associated with it?". The pop-up should provide options for "Cancel" and "Remove" actions.
-
+Note: it is **EXTREMELY IMPORTANT** to follow all the possible error messages, in the Rails console and the network tab of the browser especially when working with Action Cable!
 </blockquote>
+Your solution could look like the following:
 
+![image](../images/8-12.png)
 <blockquote>
 
-## Exercise 3
+## Exercise 6
 
-Notice that _Number of Active Breweries_ and _Number of Retired Breweries_ require a full page reload to reflect the actual numbers. Make these numbers dynamic so that any addition or retirement of a brewery by any user triggers real-time updates. The changes should be streamed to reflect the updated counts instantly.
+Enhance the breweries list functionality by adding a button or text "X" for removing a brewery from the database.
 
-Hint: you can render multiple turbo stream messages from a controller response by placing them in an array.
+The implementation should follow these steps:
+
+Initially, make the removal work without using Turbo, requiring a full page reload after the delete action.
+
+Improve the functionality by dynamically removing the deleted brewery from the list using Turbo Streams. Ensure the removal is reflected in the UI without requiring a full page reload.
+
+Note: you might end up trying the following
+
+```html
+link_to("X", brewery, method: :delete) %>
+```
+
+this was a proper way to make a delete request in Rails up to version 6. In Rails 7 you need to specify the HTTP request verb a bit differently:
+
+```html
+link_to("X", brewery, data: {turbo_method: :delete }) %>
+```
+
+## Exercise 7
+
+Leverage WebSockets to stream the removal action to all connected browsers in real time.
+
+Enhance the user experience by introducing a confirmation pop-up. When a user clicks the remove button, a confirmation dialog should appear with the text "Are you sure you want to remove brewery X and all beers associated with it?". The pop-up should provide options for "Cancel" and "Remove" actions.
+
+You will [here](https://www.rubydoc.info/gems/turbo-rails/0.5.2/Turbo/Broadcastable) a suitable broadcast method. You might need to google a bit to get the parameters right.
+
+## Exercise 8
+
+Notice that _Number of Active Breweries_ and _Number of Retired Breweries_ require a full page reload to reflect the actual numbers. Make these numbers dynamic so that any addition or retirement of a brewery by the user triggers real-time updates. The changes should be streamed to reflect the updated counts instantly. In this exercise, the change made by other user/browsers does not need to affect the counts so Action Cable is not yet needed.
+
+Hint: you can render multiple Turbo Stream messages from a controller response by placing them in an array.
+
+## Exercise 9
+
+Extend the solution of the previous exercise to leverage Action Cable so that the brewery counts are updated also when somebody other creates or deletes a brewery.
+
 </blockquote>
 
 ## Stimulus
@@ -569,11 +1024,11 @@ Stimulus utilizes key concepts such as **controllers**, **actions**, **targets**
 
 ### Deleting ratings
 
-Let's try our hand at Stimulus with implementing a feature that allows users to delete multiple beer ratings at once without need for a full page reload.
+Let's try our hand at Stimulus by implementing a feature that allows users to delete multiple beer ratings at once without the need for a full page reload.
 
 We can start by creating a new partial file named `_ratings.html.erb` within the `/app/views/users` folder.
 
-Then we extract the ratings code section (shown below) from the `/app/views/users/show.html.erb` file and place it into the ratings partial file.
+Then we extract the rating code section (shown below) from the `/app/views/users/show.html.erb` file and place it into the ratings partial file.
 
 **/app/views/users/\_ratings.html.erb**
 
@@ -581,9 +1036,9 @@ Then we extract the ratings code section (shown below) from the `/app/views/user
 <ul>
   <% @user.ratings.each do |rating| %>
     <li>
-      <%= "#{rating.score} #{rating.beer.name}" %>
+      <%= link_to "#{rating.score} #{rating.beer.name}", rating, data: { turbo_frame: "rating_details" }  %>
       <% if @user == current_user %>
-        <%= button_to 'delete', rating, method: :delete, form: { style:'display:inline-block;', data: { 'turbo-confirm': 'Are you sure?' } } %>
+        <%= button_to 'delete', rating, method: :delete, form: { style: 'display:inline-block;',  data: { 'turbo-confirm': 'Are you sure?' } } %>
       <% end %>
     </li>
   <% end %>
@@ -599,7 +1054,7 @@ Then we delete the ratings code from the `/app/views/users/show.html.erb` file a
 <%= render partial: 'ratings' %>
 ```
 
-We can then modify the partial by removing the list elements and delete button from the `/app/views/users/_ratings.html.erb` file, like so:
+We can then modify the partial by removing the list elements and the delete button from the `/app/views/users/_ratings.html.erb` file, like so:
 
 **/app/views/users/\_ratings.html.erb**
 
@@ -610,7 +1065,9 @@ We can then modify the partial by removing the list elements and delete button f
       <% if @user == current_user %>
         <input type="checkbox" name="ratings[]" value="<%= rating.id %>" />
       <% end %>
-      <span><%= "#{rating.score} #{rating.beer.name}" %></span>
+      <span>
+        <%= link_to "#{rating.score} #{rating.beer.name}", rating, data: { turbo_frame: "rating_details" }  %> 
+      </span>
     </div>
   <% end %>
   <% if @user == current_user %>
@@ -619,16 +1076,16 @@ We can then modify the partial by removing the list elements and delete button f
 </div>
 ```
 
-With the modified templates ready, let's update the `routes.rb` file (`/app/config/routes.rb`) to handle the ratings destroy action. Remove the `destroy` action from the ratings resources and add a separate delete method to handle the removal of rating IDs.
+With the modified templates ready, let's update the `routes.rb` file to handle the ratings destroy action. Remove the `destroy` action from the rating resources and add a separate delete method to handle the removal of rating IDs.
 
 **/app/config/routes.rb**
 
 ```ruby
-resources :ratings, only: [:index, :new, :create]
+resources :ratings, only: [:index, :new, :create, :show]
 delete 'ratings', to: 'ratings#destroy'
 ```
 
-Modify the `destroy` method within the `ratings_controller.rb` file (`app/controllers/ratings_controller.rb`) to handle the deletion of multiple rating IDs. We can do it like this:
+Modify the `destroy` method within the `ratings_controller.rb` to handle the deletion of multiple rating IDs. We can do it like this:
 
 **app/controllers/ratings_controller.rb**
 
@@ -654,14 +1111,15 @@ Right now the delete button does not really do anything as it's not connected to
 
 ### Stimulus Controllers
 
-When working with Stimulus, it is essential to follow a specific naming convention for **controller** files. Each controller file should be named in the format `[identifier]_controller.js`, where the identifier corresponds to the data-controller attribute associated with the respective controller in your HTML markup.
-By adhering to this naming convention, Stimulus can seamlessly link the controllers in your HTML with their corresponding JavaScript files.
+The basic organizational unit of a Stimulus application is a [controller](https://stimulus.hotwired.dev/reference/controllers).
 
-Let's start by creating a `ratings_controller.js` and put it to file path `/app/javascript/controllers/ratings_controller.js`:
+When working with Stimulus, it is essential to follow a specific naming convention for **controller** files. Each controller file should be named in the format `[identifier]_controller.js`, where the identifier corresponds to the data-controller attribute associated with the respective controller in your HTML markup. By adhering to this naming convention, Stimulus can seamlessly link the controllers in your HTML with their corresponding JavaScript files.
 
-**/app/javascript/controllers/ratings_controller.js**
+Let's start by creating a `ratings_controller.js` and putting it to file path `/app/JavaScript/controllers/ratings_controller.js`:
 
-```javascript
+**/app/JavaScript/controllers/ratings_controller.js**
+
+```JavaScript
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
@@ -685,15 +1143,15 @@ We can then reload the page and see from the console log that we have indeed con
 
 ![image](../images/ratebeer-w8-9.png)
 
-`connect()` is a callback method which Stimulus supports out of the box which is executed when the controller is connected to the DOM.
+`connect()` is a callback method that Stimulus supports out of the box which is executed when the controller is connected to the DOM.
 
 ### Lifecycle Methods
 
-Lifecycle methods in Stimulus provide a capability for executing code at specific stages in the lifecycle of a controller. These methods, defined within the controller class, offer hooks for initialization, connection to the DOM, and disconnection from the DOM.
+[Lifecycle](https://stimulus.hotwired.dev/reference/lifecycle-callbacks) methods in Stimulus provide a capability for executing code at specific stages in the lifecycle of a controller. These methods, defined within the controller class, offer hooks for initialization, connection to the DOM, and disconnection from the DOM.
 
 Here is an example showcasing the available lifecycle methods in a Stimulus controller:
 
-```javascript
+```JavaScript
 import { Controller } from 'stimulus';
 
 export default class extends Controller {
@@ -725,7 +1183,7 @@ By leveraging these lifecycle methods, developers can ensure proper initializati
 
 ### Stimulus Actions
 
-**Actions** in Stimulus are methods defined within a controller that respond to user events or changes in the application state. These actions are identified using the data-action attribute and can be triggered by various events, such as clicks, form submissions, or custom events.
+[Actions](https://stimulus.hotwired.dev/reference/actions) in Stimulus are methods defined within a controller that respond to user events or changes in the application state. These actions are identified using the data-action attribute and can be triggered by various events, such as clicks, form submissions, or custom events.
 
 Let's add an action to our `<button>` element, data-action attributes are used with the format `event->controller#method`.
 
@@ -759,9 +1217,9 @@ Here is a complete list of elements and their default events:
 
 We can now write the `destroy` method in our `ratings_controller.js`:
 
-**/app/javascript/controllers/ratings_controller.js**
+**/app/JavaScript/controllers/ratings_controller.js**
 
-```javascript
+```JavaScript
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
@@ -809,7 +1267,7 @@ And now we finally have a working delete button for deleting multiple ratings!
 
 ### Beer tax calculator
 
-To showcase a bit more Stimulus features we'll build a handy beer tax calculator for our application so that you know how much you are supporting Helsinki University and other public services with each beer bought. To start let's add new path to our `routes.rb`.
+To showcase a bit more Stimulus features we'll build a handy beer tax calculator for our application so that you know how much you are supporting Helsinki University and other public services with each beer bought. To start let's add a new path to our `routes.rb`.
 
 **/config/routes.rb**
 
@@ -821,7 +1279,7 @@ Rails.application.routes.draw do
 end
 ```
 
-And create a new controller file for out path:
+And create a new controller file for into path:
 
 **/app/controllers/misc_controller.rb**
 
@@ -832,7 +1290,7 @@ class MiscController < ApplicationController
 end
 ```
 
-And then add link for the calculator to our navbar:
+And then add a link for the calculator to our navbar:
 
 **/app/views/layouts/application.html.erb**
 
@@ -847,20 +1305,19 @@ And then add link for the calculator to our navbar:
 <!--(...)-->
 ```
 
-Lastly we can create a Stimulus controller file for our calculator to `app/javascript/controllers`:
+Lastly we can create a Stimulus controller file for our calculator to `app/JavaScript/controllers`:
 
-**/app/javascript/controllers/calculator_controller.js**
+**/app/JavaScript/controllers/calculator_controller.js**
 
-```javascript
+```JavaScript
 import { Controller } from "@hotwired/stimulus";
 
-    export default class extends Controller {}
-}
+export default class extends Controller {}
 ```
 
 #### Stimulus Targets
 
-**Targets** in Stimulus are special attributes that allow a controller to reference and manipulate specific elements within its scope. To define targets, you need to add the `data-[controller name]-target` attribute to the HTML elements. Stimulus scans your controller class and identifies target names in the static `targets` array. It automatically adds three properties for each target name: `sourceTarget`, which evaluates to the first matching target element, `sourceTargets`, which evaluates to an array of all matching target elements, and `hasSourceTarget`, which returns boolean value `true` or `false` depending on the presence of a matching target.
+[Targets](https://stimulus.hotwired.dev/reference/targets) in Stimulus are special attributes that allow a controller to reference and manipulate specific elements within its scope. To define targets, you need to add the `data-[controller name]-target` attribute to the HTML elements. Stimulus scans your controller class and identifies target names in the static `targets` array. It automatically adds three properties for each target name: `[name]Target`, which evaluates to the first matching target element, `[name]Targets`, which evaluates to an array of all matching target elements, and `has[Name]Target`, which returns boolean value `true` or `false` depending on the presence of a matching target.
 
 Let's create a form for our calculator containing some targets to collect.
 ```html
@@ -886,14 +1343,17 @@ Let's create a form for our calculator containing some targets to collect.
       </br>
       <button>Calculate</button>
    </form>
+   </br>
+   <div id="result">
+   </div>
 </div>
 ```
 
-To add target names to the controller's list of target definitions, you need to update the `calculator_controller.js` file accordingly. This will automatically create properties with names `nameTarget` for each which return the first matching target element. You can then use this property to read the value of the element and for testing print each value to console.
+To add target names to the controller's list of target definitions, you need to update the `calculator_controller.js` file accordingly. This will automatically create properties with names `[name]Target` for each which returns the first matching target element. You can then use this property to read the value of the element and for testing print each value to the console.
 
-**/app/javascript/controllers/calculator_controller.js**
+**/app/JavaScript/controllers/calculator_controller.js**
 
-```javascript
+```JavaScript
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
@@ -910,27 +1370,33 @@ export default class extends Controller {
 }
 ```
 
-When testing the submit button we can see that we are getting the values printed to javascript console.
+When testing the submit button we can see that we are getting the values printed to the JavaScript console.
 
 ![image](../images/ratebeer-w8-10.png)
 
 #### Stimulus Values
 
-**Values** in Stimulus are a way to store and access data within a controller using the `value` method. These values can be declared in various ways, such as static values defined in the controller, attributes on HTML elements, or dynamic values.
+[Values](https://stimulus.hotwired.dev/reference/values) in Stimulus are a way to store and access data within a controller using the `value` method. These values can be declared in various ways, such as static values defined in the controller, attributes on HTML elements, or dynamic values.
 
-For our calculator app we can create attribute `data-calculator-vat-value` for having value saved for value added tax. In this case, the value gets set to `0.24`.
+For our calculator app, we could create an attribute for having value saved for value-added tax. Let us define the value in the controller:
 
-Let's also add div for us to input the result of our calculations. Notice that the div needs to be inside the `<div data-controller="calculator">` element so that our calculator controller can see and access it.
+```rb
+class MiscController < ApplicationController
+  def calculator
+    @vat = 0.24
+  end
+end
+```
+
+Now we can create the data attribute `data-calculator-vat-value` based on the initial value given by the controller:
 
 ```html
 <h2>Beer tax calculator</h2>
-
-<% vat = 0.24 %>
-<div data-controller="calculator" data-calculator-vat-value="<%= vat %>" class="container">
+<div data-controller="calculator" data-calculator-vat-value="<%= @vat %>" class="container">
    <form data-action="calculator#calculate">
       // (...)
       <div>
-         <p>Value added tax <%= vat * 100 %>%</p>
+         <p>Value added tax <%= @vat * 100 %>%</p>
       </div>
       </br>
       <button>Calculate</button>
@@ -941,13 +1407,13 @@ Let's also add div for us to input the result of our calculations. Notice that t
 </div>
 ```
 
-In the controller file `calculator_controller.js`, a static values array is created, including the attribute name `vat` with a type of `Number`. By adding the attribute `data-calculator-vat-value="0.24"` to the `<div>` element, the value `0.24` is assigned to the `vatValue` variable in the controller and converted into number with JavaScript's `Number()` -function. This value can then be accessed and used within the controller's code.
 
-Now we can finish the code for our calculator.
 
-**/app/javascript/controllers/hello_controller.js**
+In the controller file `calculator_controller.js`, a static `values` array is created, including the attribute name `vat` with a type of `Number`. By adding the attribute `data-calculator-vat-value="0.24"` to the `<div>` element, the value `0.24` is assigned to the `vatValue` variable in the controller and converted into number with JavaScript's `Number()` -function. This value can then be accessed and used within the controller's code.
 
-```javascript
+Now we can finish the code for our calculator:
+
+```JavaScript
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
@@ -969,14 +1435,19 @@ export default class extends Controller {
             alcoholTax = 0.3805;
       }
       const beerTax = (amount * abv * alcoholTax);
-      const vatAmount = (price * this.vatValue);
+      const vatAmount = (price - price / (1.0 + this.vatValue));
       const taxPercentage = ((beerTax + vatAmount) / price * 100);
+
+      // search for the element where the result is shown
       const result = document.getElementById("result")
-      result.innerHTML = "<p>Beer has " + beerTax.toFixed(2) + "€ of alcohol tax and " + vatAmount.toFixed(2) + "€ of value added tax.</p>" +
-              "<p>" + taxPercentage.toFixed(1) + "% of the price is taxes.</p>"
+      result.innerHTML = `
+        <p>Beer has ${beerTax.toFixed(2)} € of alcohol tax and ${vatAmount.toFixed(2)} € of value added tax.</p>
+        <p> ${taxPercentage.toFixed(1)} % of the price is taxes.</p>`
    }
 }
 ```
+
+The code uses [document.getElementById](https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById) to find the `div` element that has the ID `result`. The result is set to the element using the [innerHTML](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML) attribute.
 
 And now we have a beautifully working beer tax calculator!
 
@@ -984,60 +1455,124 @@ And now we have a beautifully working beer tax calculator!
 
 <blockquote>
 
-## Exercise 4
+## Exercise 10
 
-Improve beer tax calculator by changing the amount field to be dropdown selection containing most common beer can and bottle sizes, for example these: 0.33, 0.375, 0.5, 0.66, 0.75, 1, 1.3 and 1.5 liters.
+Add caclulator a button that can be used to reset all the input values to value zero:
+
 </blockquote>
+
+![image](../images/8-14.png)
 
 <blockquote>
 
-## Exercise 5
+## Exercise 11
 
-Continuing from the exercise 4, add option `Custom` to the dropdown. When custom option is selected, there is user fillable custom amount field added to the form. If user switches back to pre-defined amount in the dropdown, custom amount field gets removed from the form.
+Improve the beer tax calculator by changing the amount field to be a dropdown selection, implemented with the [select](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select) component, containing the most common beer can and bottle sizes, for example 0.33, 0.375, 0.5, 0.66, 0.75, 1, 1.3 and 1.5 liters.
 
-![image](../images/ratebeer-w8-12.png)
+## Exercise 12
 
-Hint: Remember that you have `this.has[name]Target` checker available to check if named target has been defined.
+Continuing from exercise 11, add the option `Custom` to the dropdown. 
+When the custom option is selected, the amount is taken from a user-fillable custom amount field:
+
+For the time being the custom field can remain visible all the time.
+
 </blockquote>
 
+![image](../images/8-15.png)
 
 <blockquote>
 
-## Exercise 6
+## Exercise 13
 
-Add _select all_ checkbox input to users ratings partial and event that selects/deselects all users ratings when that checkbox is selected/deselected.
+Fine-tune the solution so that there a is user fillable custom amount field added to the form **only** when the "custom" option is selected. If the user switches back to the pre-defined amount in the dropdown, the custom amount field gets removed from the form.
+
+Note that it is possible to attach a controller function to a select component that is executed always when a new option is selected:
+
+```html
+<select data-calculator-target="amount" data-action="calculator#change">
+  ...
+</select>
+```
+
+```js
+import { Controller } from "@hotwired/stimulus";
+
+export default class extends Controller {
+  // ...
+
+  change(event) {
+    // a new option was selected!
+    console.log(event.target.value)
+  } 
+
+  // ...
+}
+```
+
+## Exercise 14
+
+Let us get back to the users' rating list.
+
+Add a _select all_ checkbox input to `users/ratings? partial that selects/deselects all users' ratings when that checkbox is selected/deselected.
+
 </blockquote>
+
+Your solution could look like this:
+
+![image](../images/8-16.png)
 
 <blockquote>
 
-## Exercise 7
+## Exercise 15
 
-When we add new breweries in the brewery page, our form does not get emptied out after adding the brewery. Use Stimulus to clear all form inputs (also the checkbox) after the form is submitted.
+Now it is time to use Stimulus in fine-tuning the breweries page!
 
-Hint: Turbo offers `turbo:submit-end` event that is fired after form is submitted which you can user to trigger an action. More turbo events can be found here: https://turbo.hotwired.dev/reference/events
+When we add new breweries to the brewery page, our form does not get emptied out after adding the brewery. We shall fix this in the next exercise but let us warm up and add first a button that can be used to empty the input fields.
+
+Hint: You can add a `data-form-target` attribute to an input field as follows:
+
+```html
+  <%= form.text_field :name, data: { "form--target": "name" } %>
+```
+
+## Exercise 16
+
+Use now Stimulus to clear all form inputs after the form is submitted.
+
+Hint: Turbo offers `turbo:submit-end` event that is fired after the form is submitted which you can use to trigger an action. More turbo events can be found here: https://turbo.hotwired.dev/reference/events
+
+It might be a bit tricky to have the data-action attribute properly defined. Remember that you have to use the "long" form (with an arrow) since the event we use is not the default.
+
+## Exercise 17
+
+As the final exercise of this part, you shall make a brewery creation a bit easier with the use of [Avoin data](http://avoindata.prh.fi/) (Open data) API that provides a list of Finnish breweries in the endpoint
+
+```
+https://avoindata.prh.fi/bis/v1?totalResults=true&maxResults=500&businessLine=Oluen%20valmistus
+```
+
+Add the creation form a select drop-down that gets its data (breweries) from the above API endpoint. The select drop-down could be used to prefill the input fields.
+
+You can assume the year of the registration date as the year of the brewery's establishment unless it is before the 1980's as those records don't seem to match the actual establishment year. You may leave the year field empty for those.
+
 </blockquote>
 
-<blockquote>
+Your solution should work as follows. The user can fill in the info of a brewery either in the old way (by writing to text fields), or select a brewery from the drop-down:
 
-## Exercise 8
+![image](../images/8-17.png)
 
-For the form for creating a new brewery, add a select field that gets its data (breweries) from the PRH API
+If the user selects a brewery, its name and the year are filled to the text fields:
 
-- Add select input-field and get its data (breweries) from the PRH API.
-- After user selects brewery from select input, get selected brewery's data from the PRH API and fill brewery name and registration year to new form inputs (name, year).
-
-
-- API url to get all breweries: https://avoindata.prh.fi/bis/v1?totalResults=true&maxResults=500&businessLine=Oluen%20valmistus
-- API url to get the single brewery data: https://avoindata.prh.fi/bis/v1?businessId=${breweryId}
-
-You can assume year of the registration date as the year of the brewery's establishment, unless it is before 1980's as those records don't seem to match to the actual establishment year. Leave the year field empty for those.
-</blockquote>
+![image](../images/8-18.png)
 
 ## ActionCable, Redis, and Heroku / Fly.io Integration
 
-To ensure seamless operation of **ActionCable**, the foundational component for Turbo streams, in a production environment, it is necessary to have [Redis](https://redis.io/) installed. Please follow the steps outlined below to ensure a proper configuration.
+It is not necessary to deploy your final version to the cloud but if you do so, here are some tips to get everything set.
+
+To ensure seamless operation of **ActionCable**, the foundational component for Turbo Streams, in a production environment, it is necessary to have [Redis](https://redis.io/) installed. Please follow the steps outlined below to ensure a proper configuration.
 
 ### Heroku
+
 1. **Verify Redis Installation**
 
 Check if you already have a Redis add-on by running the following command in your terminal:
@@ -1057,6 +1592,7 @@ gem "redis", ">= 3", "< 5"
 ```
 
 ### Fly.io
+
 1. **Verify Redis Installation**
 
 Check if you already have a Redis instance by running the following command in your terminal:
@@ -1087,8 +1623,8 @@ gem "redis", ">= 3", "< 5"
 
 ## Submitting the exercises
 
-Commit all your changes and push the code to Github. Deploy to the newest version of Heroku or Fly.io, too. Remember to check with Rubocop that your code still adheres to style rules.
+Commit all your changes and push the code to GitHub. Remember to check with Rubocop that your code still adheres to style rules. Deploying the newest version of Heroku or Fly.io is voluntary!
 
-If you have problems with Heroku, remember to use <code>heroku logs</code> to view the logs. The same can be done for Fly.io with <code>fly logs</code>.
+Mark the exercises you have done at https://studies.cs.helsinki.fi/stats/courses/rails2023-hotwire notice that for this part there is a separate course instance in the submission system! 
 
-This part of the course is still in beta testing. You can already try the material and exercises, but they cannot be submitted yet and the exercises can change before they are released.
+See [here](/web/ilmoittautuminen-english.md) for the info on how to get the University of Helsinki credits for this part registered!

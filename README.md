@@ -1,4 +1,4 @@
-## Web-palvelinohjelmointi Ruby on Rails 2023, Tietojenkäsittelytieteen osasto, Helsingin Yliopisto
+## Web-palvelinohjelmointi Ruby on Rails 2024, Tietojenkäsittelytieteen osasto, Helsingin Yliopisto
 
 Kurssisivu https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/wadror.md
 
@@ -11,8 +11,9 @@ Kurssisivu https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/wadr
 - [viikko 5](https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/web/viikko5.md)
 - [viikko 6](https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/web/viikko6.md)
 - [viikko 7](https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/web/viikko7.md)
+- [viikko 8 (in English)](https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/english/week8.md)
 
-## Web-development Ruby on Rails 2023, Department of Computer Science, University of Helsinki
+## Web-development Ruby on Rails 2024, Department of Computer Science, University of Helsinki
 
 Course page https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/wadror-english.md
 
@@ -25,3 +26,4 @@ Course page https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/wad
 - [week 5](https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/english/week5.md)
 - [week 6](https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/english/week6.md)
 - [week 7](https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/english/week7.md)
+- [week 8](https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/english/week8.md)

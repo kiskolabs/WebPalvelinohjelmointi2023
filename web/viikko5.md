@@ -4,9 +4,11 @@ Jatkamme sovelluksen rakentamista siitä, mihin jäimme viikon 4 lopussa. Allaol
 
 Suuri osa internetin palveluista hyödyntää nykyään joitain avoimia rajapintoja, joiden tarjoaman datan avulla sovellukset voivat rikastaa omaa toiminnallisuuttaan.
 
-Myös oluihin liittyviä avoimia rajapintoja on tarjolla, ks. https://www.programmableweb.com/ hakusanalla beer
+Käyttöömme valikoituu Beermapping API <https://beermapping.com/api/>, joka tarjoaa mahdollisuuden oluita tarjoilevien ravintoloiden tietojen etsintään.
 
-Käyttöömme valikoituu Beermapping API (ks. <https://www.programmableweb.com/api/beer-mapping> ja <https://beermapping.com/api/>), joka tarjoaa mahdollisuuden oluita tarjoilevien ravintoloiden tietojen etsintään.
+**HUOM** the Beermapping API ei toimi kunnolla tällä hetkellä. Kurssin tarpeita varten on luotu korvaava API, ks.
+ https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/beermapping.md
+
 
 Beermapingin API:a käyttävät sovellukset tarvitsevat yksilöllisen API-avaimen. Saat avaimen sivulta https://beermapping.com/api/ kirjauduttuasi ensin sivulle (kirjautumisen jälkeen vaihda selaimen osoiteriviltä osoite takaisin muotoon https://beermapping.com/api/). Vastaava käytäntö on olemassa hyvin suuressa osassa nykyään tarjolla olevissa avoimissa rajapinnoissa.
 
@@ -507,7 +509,7 @@ response = HTTParty.get "#{url}#{ERB::Util.url_encode(params[:city])}"
 
 ## Places-kontrollerin refaktorointi
 
-Railsissa kontrollereiden ei tulisi sisältää sovelluslogiikkaa. Ulkopuoleisen API:n käyttö onkin syytä eristää omaksi luokakseen. Luontevin paikka luokan koodille on hakemisto _lib_. Sijoitetaan siis seuraava tiedostoon _lib/beermapping_api.rb_:
+Railsissa kontrollereiden ei tulisi sisältää sovelluslogiikkaa. Ulkopuoleisen API:n käyttö onkin syytä eristää omaksi luokakseen. Luontevin paikka luokan koodille on _app_-hakemiston alla oleva alihakemisto _services_. Vaikka tätä hakemistoa ei Railsissa automaattisesti luodakaan, Rails 5:stä lähtien siihen sijoitetut luokat ladataan ohjelmaa käynnistettäessä kuitenkin automaattisesti. Luodaan siis hakemisto oikeaan paikkaan ja sijoitetaan seuraava koodi tiedostoon _app/services/beermapping_api.rb_:
 
 ```ruby
 class BeermappingApi
@@ -533,26 +535,7 @@ end
 
 Luokka siis määrittelee stattisen metodin, joka palauttaa taulukon parametrina määritellystä kaupungista löydetyistä olutpaikoista. Jos paikkoja ei löydy, on taulukko tyhjä. API:n eristävä luokka ei ole vielä viimeiseen asti hiotussa muodossa, sillä emme vielä täysin tiedä mitä muita metodeja tarvitsemme.
 
-Jotta _lib_-hakemistoon sijoitettu koodi toimisi (sekä omalla koneella, että Fly.io:ssa ja Herokussa), tulee tiedostoon _config/application.rb_ lisätä seuraavat kaksi riviä
-
-```ruby
-config.autoload_paths << Rails.root.join("lib")
-config.eager_load_paths << Rails.root.join("lib")
-```
-
-lisäys tulee tehdä _Application_-luokan määrittelyn sisälle
-
-```ruby
-module Ratebeer
-  class Application < Rails::Application
-    # ...
-
-    # lisäys tänne
-  end
-end
-```
-
-Jotta muutokset tulevat voimaan täytyy sovellus käynnistää uudestaan.
+Tarvittaessa käynnistä ohjelma uudestaan.
 
 Kontrollerista tulee nyt siisti:
 
@@ -671,7 +654,7 @@ mluukkai@melkki$ curl http://beermapping.com/webservice/loccity/731955affc547174
 Nyt voimme copypastata HTTP-pyynnön palauttaman XML-muodossa olevan tiedon testiimme. Jotta saamme XML:n varmasti oikein sijoitetuksi merkkijonoon, käytämme hieman erikoista syntaksia
 ks. http://blog.jayfields.com/2006/12/ruby-multiline-strings-here-doc-or.html jossa merkkijono sijoitetaan merkkien <code><<-END_OF_STRING</code> ja <code>END_OF_STRING</code> väliin.
 
-Seuraavassa tiedostoon spec/lib/beermapping_api_spec.rb sijoitettava testikoodi (päätimme sijoittaa koodin alihakemistoon lib koska testin kohde on lib-hakemistossa oleva apuluokka):
+Seuraavassa tiedostoon spec/services/beermapping_api_spec.rb sijoitettava testikoodi (päätimme sijoittaa koodin alihakemistoon services koska testin kohde on services-hakemistossa oleva apuluokka):
 
 ```ruby
 require 'rails_helper'

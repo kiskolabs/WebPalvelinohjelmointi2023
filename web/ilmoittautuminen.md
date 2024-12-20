@@ -3,7 +3,7 @@
 
 Jos haluat kurssista suoritusmerkinnän ja opintopisteet Helsingin yliopiston opintosuoritusrekisteriin, ilmoittaudu kurssille Avoimen yliopiston kautta. Vain niiden opiskelijoiden opintosuoritukset voidaan kirjata Helsingin yliopiston opintorekisteriin, jotka ovat tehneet kurssi-ilmoittautumisen Avoimeen yliopistoon. 
 
-1. Ilmoittaudu kurssille tämän linkin kautta: <https://www.avoin.helsinki.fi/palvelut/esittely.aspx?s=otm-ae414126-b981-4942-9079-ef268abf016f>
+1. Ilmoittaudu kurssille tämän linkin kautta: <https://www.avoin.helsinki.fi/palvelut/esittely.aspx?s=otm-7c59477c-a0f6-47ce-9de0-1bc6669a2523>
 2. Tallenna Helsingin yliopiston opiskelijanumerosi palautussovellukseen. 
 
 ### Kuinka saan selville opiskelijanumeroni
@@ -59,3 +59,5 @@ Arvosana siirtyy Helsingin yliopiston opintorekisteriin Sisuun ja [Opintopolkuun
 Kun suoritusmerkintä on kirjattu, näet palautussovelluksessa tekstin
 
 > University credits registered, see the course page how to get a transcript if you need one
+
+Huomaa, että kurssin osa 8 edellyttää erillistä ilmoittautumistsa sekä suoritusmerkinnän pyytämistä!

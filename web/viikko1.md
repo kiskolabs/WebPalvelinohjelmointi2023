@@ -58,7 +58,7 @@ Tutkitaan mitä tapahtuu kun käyttäjä menee Railsilla toteutetulle web-sivull
 
 1. Käyttäjän kirjoitettua URL:n selaimen osoiteriville, tekee selain HTTP GET-pyynnön palvelimelle ratebeer22.herokuapp.com
 
-2. Usein palvelimella suoritetaan web-palvelinohjelmistoa (esim. Apache tai Nginx), joka toimii välityspalvelimena ohjaten pyynnön osoitteeseen rekisteröityyn Rails-sovellukseen. Sovellus selvittää mikä sovelluksen _kontrolleri_ on rekisteröity huolehtimaan resurssiin breweries kohdistuvista GET-kutsista. Tätä vaihetta sanotaan Rails-sovelluksen sisäiseksi reititykseksi (routing), eli etsitään "reitti minkä varrella pyyntö käsitellään". On myös mahdollista ohittaa välityspalvelin, jolloin Rails-sovellus on ensimmäinen pyynnön vastaanottaja. Useasti kuitenkin välityspalvelinta käytetään kevyenä kerroksena mm. nopeuttamaan suorituskykyä ja jakelemaan pyyntöjä useammalle palvelimelle, joilla varsinainen Rails-sovellus on.
+2. Usein palvelimella suoritetaan web-palvelinohjelmistoa (esim. Apache tai Nginx), joka toimii välityspalvelimena ohjaten pyynnön osoitteeseen rekisteröityyn Rails-sovellukseen. Sovellus selvittää mikä sovelluksen _kontrolleri_ on rekisteröity huolehtimaan resurssiin breweries kohdistuvista GET-kutsuista. Tätä vaihetta sanotaan Rails-sovelluksen sisäiseksi reititykseksi (routing), eli etsitään "reitti minkä varrella pyyntö käsitellään". On myös mahdollista ohittaa välityspalvelin, jolloin Rails-sovellus on ensimmäinen pyynnön vastaanottaja. Useasti kuitenkin välityspalvelinta käytetään kevyenä kerroksena mm. nopeuttamaan suorituskykyä ja jakelemaan pyyntöjä useammalle palvelimelle, joilla varsinainen Rails-sovellus on.
 
 3. Kun oikea kontrolleri (esimerkissämme panimoista huolehtiva kontrolleri) ja sen pyynnöstä huolehtiva metodi selviää, kutsuu sovellus metodia ja antaa sille parametriksi HTTP-pyynnön mukana mahdollisesti tulleen datan. Kontrolleri hoitaa sitten operaatioon liittyvät toimenpiteet, yleensä toimenpiteiden suorittaminen edellyttää joihinkin sovelluksen dataa ja sovelluslogiikkaa sisältäviin _modeleihin_ tapahtuvaa metodikutsua.
 
@@ -97,7 +97,7 @@ Kurssin rakenne poikkeaa jossain määrin Tietojenkäsittelytieteen osaston kurs
 
 Kurssi jakautuu seitsemään "viikkoon", eli osaan jotka tehtiin kurssin aiemmissa versiossa yhden viikon aikana. Tällä kurssilla on kuitenkin ainoastaan yksi deadline, 31.12.2023 klo 23.59.
 
-Jokainen "viikko" palateaan erikseen kurssin palautussovellukseen. Palautettuasi yhden viikon tehtävät, pääset näkemään viikon esimerkkivastauksen. Seuraavalla viikolla on mahdollista jatkaa joko oman sovelluksen rakentamista tai ottaa pohjaksi edellisen viikon esimerkkivastaus.
+Jokainen "viikko" palauteaan erikseen kurssin palautussovellukseen. Palautettuasi yhden viikon tehtävät, pääset näkemään viikon esimerkkivastauksen. Seuraavalla viikolla on mahdollista jatkaa joko oman sovelluksen rakentamista tai ottaa pohjaksi edellisen viikon esimerkkivastaus.
 
 Osa viikon tehtävistä on käytännössä pakollisia, muuten eteneminen pysähtyy viikon osalta. Osa tehtävistä taas on vapaaehtoisia, ei-kriittisten ominaisuuksien toteutuksia. Osa näistä ominaisuuksista oletetaan olevan ohjelmistossa seuraavalla viikolla, joten jos et ole tehnyt kaikkia viikon tehtäviä, kannattaa aloittaa esimerkkivastauksesta tai vaihtoehtoisesti copypasteta sieltä tarvittavat asiat koodiisi.
 
@@ -547,7 +547,7 @@ irb(main):046 >
 
 Luodut oluet **iso 3** ja **Karhu** siis liitetään panimoon Koff. Tietokannan tasolla oluiden ja panimon välillä on liitos. Koodin tasolla liitos ei kuitenkaan vielä toimi.
 
-Jotta saamme liitokset toimimaan myös koodin tasolla, muokataan modeleja seuraavasti:
+Jotta saamme liitokset toimimaan myös koodin tasolla, muokataan modeleja seuraavasti (eli tiedostoja app/models/brewery.rb ja app/models/beer.rb):
 
 ```ruby
 class Beer < ApplicationRecord
@@ -767,7 +767,7 @@ irb(main):071:0> koff.beers.create name: "Extra Light Triple Brewed", style: "La
 
 Tutkitaan hieman panimon valmiiksi generoitua kontrolleria app/controller/breweries_controller.rb
 
-Kontrolleri on siis nimetty Railsin konvention mukaan monikkomuodossa. Kontrollerissa on Railsin konventioiden mukaan 6 metodia, tutkitaan niistä aluksi kaikkien oluiden näyttämisestä huolehtivaa metodia <code>index</code>:
+Kontrolleri on siis nimetty Railsin konvention mukaan monikkomuodossa. Kontrollerissa on Railsin konventioiden mukaan 6 metodia, tutkitaan niistä aluksi kaikkien panimoiden näyttämisestä huolehtivaa metodia <code>index</code>:
 
 ```ruby
 class BreweriesController < ApplicationController
