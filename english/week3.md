@@ -332,7 +332,11 @@ The styling rules monitored by Rubocop are defined in _.rubocop.yml_ that is pla
 
 The rules defined there are based on the [Relaxed Ruby](https://relaxed.ruby.style/) style, but they are a bit stricter on some points. The file contents also define that some files are to be left out of any style checks.
 
-A code style check is executed with the command _rubocop_ on the command line.
+A code style check is executed with the command
+```
+rubocop
+```
+on the command line.
 
 There are quite a few problems in the code, for example:
 
@@ -480,7 +484,7 @@ Create a controller for sessions (in the file app/controllers/sessions_controlle
 ```ruby
 class SessionsController < ApplicationController
   def new
-    # render the signing up page
+      # render the signing up page
   end
 
   def create
@@ -988,7 +992,7 @@ http://guides.rubyonrails.org/active_record_validations.html and https://apidock
 >
 > Add the following validations to your program
 > * beer and brewery names are not empty
-> * the brewery founding year is an integer between 1040-2022
+> * the brewery founding year is an integer between 1040-2023
 > * the length of the username attribute of the User class is 3 – 30 characters
 
 If you try to create a beer with an empty name, you get an error message

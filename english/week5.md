@@ -5,9 +5,9 @@ You will continue to develop your application from the point you arrived at the 
 
 A great part of modern Internet services makes use of open interfaces which provides useful data to enrich applications functionality.
 
-Interfaces for beers are also available, try to search for beer at http://www.programmableweb.com/ 
+The best interface among the ones available seems to be  Beermapping API <http://beermapping.com/api/>, which makes it possible to search for beer restaurants.
 
-The best interface among the ones available seems to be  Beermapping API (see http://www.programmableweb.com/api/beer-mapping ja http://beermapping.com/api/), which makes it possible to search for beer restaurants.
+**NOTE** the Beermapping API is currently not functioning properly. There is a replacement created for this course, see https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/beermapping.md
 
 Applications which make use of beermaping API need a singular API key. You can retrieve a key at https://beermapping.com/api/, after logging in to the page (after logging in edit the url in your browser's address bar back to https://beermapping.com/api/). This is a common procedure in use for the larger part of modern free interfaces.
 
@@ -501,7 +501,7 @@ response = HTTParty.get "#{url}#{ERB::Util.url_encode(params[:city])}"
 
 ## Refactoring your Places controller
 
-Rails controllers should not include application logic. It is a best practice to put external APIs in their own class. A good place for such class is in the _lib_ folder. Place the following code into the file _lib/beermapping_api.rb_:
+Rails controllers should not include application logic. It is a best practice to put external APIs in their own class. A good place for such class is in the _services_ folder under the _app_ folder. Even though this folder is not automatically created, starting from Rails 5 the _services_ folder is autoloaded in boot sequence. Place the following code into the file _app/services/beermapping_api.rb_:
 
 ```ruby
 class BeermappingApi
@@ -527,26 +527,7 @@ end
 
 So the class defines a static method which returns a table of the beer restaurants which have been found in the towns defined by the parameter. If no restaurant is found, the table will be empty. The API class is not in its best format yet, because you cannot know completely what other methods you need.
 
-To ensure that code in the _lib_ folder will work (not only on your computer but also in Heroku and Fly.io), you must add these two lines into the _config/application.rb_ file:
-
-```ruby
-config.autoload_paths << Rails.root.join("lib")
-config.eager_load_paths << Rails.root.join("lib")
-```
-
-The addition should be placed inside _Application_ class definition
-
-```ruby
-module Ratebeer
-  class Application < Rails::Application
-    # ...
-
-    # add here
-  end
-end
-```
-
-Restart the application for the changes to take effect.
+If needed, restart the application.
 
 The controller will be looking neat, by now:
 
@@ -665,7 +646,7 @@ mluukkai@melkki$ curl http://beermapping.com/webservice/loccity/731955affc547174
 Now you could copy-paste the information returned in XML form by the HTTP reqest to your test. If you want to be sure you place the XML right in the string, you should use a quite particular syntax
 see http://blog.jayfields.com/2006/12/ruby-multiline-strings-here-doc-or.html where the string is placed between <code><<-END_OF_STRING</code> and <code>END_OF_STRING</code>.
 
-You find below the test code which should be placed into spec/lib/beermapping_api_spec.rb (deciding to place the code in the lib subfolder because the test destination is an auxiliary class in the lib folder):
+You find below the test code which should be placed into spec/services/beermapping_api_spec.rb (deciding to place the code in the services subfolder because the test destination is an auxiliary class in the services folder):
 
 ```ruby
 require 'rails_helper'

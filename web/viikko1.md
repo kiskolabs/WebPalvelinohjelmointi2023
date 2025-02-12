@@ -58,7 +58,7 @@ Tutkitaan mitä tapahtuu kun käyttäjä menee Railsilla toteutetulle web-sivull
 
 1. Käyttäjän kirjoitettua URL:n selaimen osoiteriville, tekee selain HTTP GET-pyynnön palvelimelle ratebeer22.herokuapp.com
 
-2. Usein palvelimella suoritetaan web-palvelinohjelmistoa (esim. Apache tai Nginx), joka toimii välityspalvelimena ohjaten pyynnön osoitteeseen rekisteröityyn Rails-sovellukseen. Sovellus selvittää mikä sovelluksen _kontrolleri_ on rekisteröity huolehtimaan resurssiin breweries kohdistuvista GET-kutsista. Tätä vaihetta sanotaan Rails-sovelluksen sisäiseksi reititykseksi (routing), eli etsitään "reitti minkä varrella pyyntö käsitellään". On myös mahdollista ohittaa välityspalvelin, jolloin Rails-sovellus on ensimmäinen pyynnön vastaanottaja. Useasti kuitenkin välityspalvelinta käytetään kevyenä kerroksena mm. nopeuttamaan suorituskykyä ja jakelemaan pyyntöjä useammalle palvelimelle, joilla varsinainen Rails-sovellus on.
+2. Usein palvelimella suoritetaan web-palvelinohjelmistoa (esim. Apache tai Nginx), joka toimii välityspalvelimena ohjaten pyynnön osoitteeseen rekisteröityyn Rails-sovellukseen. Sovellus selvittää mikä sovelluksen _kontrolleri_ on rekisteröity huolehtimaan resurssiin breweries kohdistuvista GET-kutsuista. Tätä vaihetta sanotaan Rails-sovelluksen sisäiseksi reititykseksi (routing), eli etsitään "reitti minkä varrella pyyntö käsitellään". On myös mahdollista ohittaa välityspalvelin, jolloin Rails-sovellus on ensimmäinen pyynnön vastaanottaja. Useasti kuitenkin välityspalvelinta käytetään kevyenä kerroksena mm. nopeuttamaan suorituskykyä ja jakelemaan pyyntöjä useammalle palvelimelle, joilla varsinainen Rails-sovellus on.
 
 3. Kun oikea kontrolleri (esimerkissämme panimoista huolehtiva kontrolleri) ja sen pyynnöstä huolehtiva metodi selviää, kutsuu sovellus metodia ja antaa sille parametriksi HTTP-pyynnön mukana mahdollisesti tulleen datan. Kontrolleri hoitaa sitten operaatioon liittyvät toimenpiteet, yleensä toimenpiteiden suorittaminen edellyttää joihinkin sovelluksen dataa ja sovelluslogiikkaa sisältäviin _modeleihin_ tapahtuvaa metodikutsua.
 
@@ -95,9 +95,9 @@ Railsilla tapahtuvassa sovelluskehityksessä komentorivin käyttön hallinta on 
 
 Kurssin rakenne poikkeaa jossain määrin Tietojenkäsittelytieteen osaston kurssistandardista. Kurssilla tehdään ainoastaan yksi sovellus, samaa sovellusta tehdään sekä kurssimateriaalissa että materiaalin sekaan upotetuissa tehtävissä. Kurssin materiaalia ei pystykään pelkästään lukemaan. Materiaalia seuratessa tulee itse rakentaa matkan varrella täydentyvää sovellusta, sillä muuten tehtävien tekeminen on mahdotonta. 
 
-Kurssi jakautuu seitsemään "viikkoon", eli osaan jotka tehtiin kurssin aiemmissa versiossa yhden viikon aikana. Tällä kurssilla on kuitenkin ainoastaan yksi deadline, 31.12.2023 klo 23.59.
+Kurssi jakautuu seitsemään "viikkoon", eli osaan jotka tehtiin kurssin aiemmissa versiossa yhden viikon aikana. Tällä kurssilla on kuitenkin ainoastaan yksi deadline, 31.5.2025 klo 23.59.
 
-Jokainen "viikko" palateaan erikseen kurssin palautussovellukseen. Palautettuasi yhden viikon tehtävät, pääset näkemään viikon esimerkkivastauksen. Seuraavalla viikolla on mahdollista jatkaa joko oman sovelluksen rakentamista tai ottaa pohjaksi edellisen viikon esimerkkivastaus.
+Jokainen "viikko" palautetaan erikseen kurssin palautussovellukseen. Palautettuasi yhden viikon tehtävät, pääset näkemään viikon esimerkkivastauksen. Seuraavalla viikolla on mahdollista jatkaa joko oman sovelluksen rakentamista tai ottaa pohjaksi edellisen viikon esimerkkivastaus.
 
 Osa viikon tehtävistä on käytännössä pakollisia, muuten eteneminen pysähtyy viikon osalta. Osa tehtävistä taas on vapaaehtoisia, ei-kriittisten ominaisuuksien toteutuksia. Osa näistä ominaisuuksista oletetaan olevan ohjelmistossa seuraavalla viikolla, joten jos et ole tehnyt kaikkia viikon tehtäviä, kannattaa aloittaa esimerkkivastauksesta tai vaihtoehtoisesti copypasteta sieltä tarvittavat asiat koodiisi.
 
@@ -402,7 +402,7 @@ Konstruktorin kutsun voisi siis kirjoittaa myös muodossa
 Brewery.new( { name: "Stadin Panimo", year: 1997 } )
 ```
 
-Metodin/konstruktorin parametrina olevassa hashissa ei ole kuitankaan pakko käyttää aaltosulkuja kaikissa tapauksissa, joten usein ne jätetäänkin pois. Jos metodilla on useita parametreja, ovat aaltosulkeet joissain tilanteissa tarpeen.
+Metodin/konstruktorin parametrina olevassa hashissa ei ole kuitenkaan pakko käyttää aaltosulkuja kaikissa tapauksissa, joten usein ne jätetäänkin pois. Jos metodilla on useita parametreja, ovat aaltosulkeet joissain tilanteissa tarpeen.
 
 Huom: Rubyssä on myös vaihtoehtoinen syntaksi hashien määrittelyyn, sitä käyttäen edellinen tulisi muodossa
 
@@ -547,7 +547,7 @@ irb(main):046 >
 
 Luodut oluet **iso 3** ja **Karhu** siis liitetään panimoon Koff. Tietokannan tasolla oluiden ja panimon välillä on liitos. Koodin tasolla liitos ei kuitenkaan vielä toimi.
 
-Jotta saamme liitokset toimimaan myös koodin tasolla, muokataan modeleja seuraavasti:
+Jotta saamme liitokset toimimaan myös koodin tasolla, muokataan modeleja seuraavasti (eli tiedostoja app/models/brewery.rb ja app/models/beer.rb):
 
 ```ruby
 class Beer < ApplicationRecord
@@ -767,7 +767,7 @@ irb(main):071:0> koff.beers.create name: "Extra Light Triple Brewed", style: "La
 
 Tutkitaan hieman panimon valmiiksi generoitua kontrolleria app/controller/breweries_controller.rb
 
-Kontrolleri on siis nimetty Railsin konvention mukaan monikkomuodossa. Kontrollerissa on Railsin konventioiden mukaan 6 metodia, tutkitaan niistä aluksi kaikkien oluiden näyttämisestä huolehtivaa metodia <code>index</code>:
+Kontrolleri on siis nimetty Railsin konvention mukaan monikkomuodossa. Kontrollerissa on Railsin konventioiden mukaan 6 metodia, tutkitaan niistä aluksi kaikkien panimoiden näyttämisestä huolehtivaa metodia <code>index</code>:
 
 ```ruby
 class BreweriesController < ApplicationController
@@ -800,7 +800,7 @@ end
 
 Näkymätemplatet, eli erb-tiedostot ovat html:ää, joihin on upotettu Ruby-koodia.
 
-Tarkastellaan valmiiksigeneroitua näkymätemplatea eli tiedostoa app/views/breweries/index.html.erb
+Tarkastellaan valmiiksi generoitua näkymätemplatea eli tiedostoa app/views/breweries/index.html.erb
 
 ```html
 <p style="color: green"><%= notice %></p>
@@ -916,7 +916,7 @@ Itse osoite luodaan tässä pitemmässä muodossa apumetodilla `brewery_path(bre
 
 Linkin generoivan komennon voisi myös "kovakoodata" muodossa `<%= link_to "Show this brewery", "breweries/#{brewery.id}" %>`, mutta kovakoodaus ei ole yleensä eikä tässäkään tapauksessa kovin järkevää.
 
-Mitä tarkoittaa `"breweries/#{brewery.id}"`? Kyseinen merkkijonon alussa on ensiksi kaikkiin panimoihin viittaava "breweries", jonka jälkeen siihen tulee yksilöivän panimon id muttujana. Muuttuja asetetaan käyttäen <code>#{}</code>-notaatiota, jonka avulla merkkijonoon voidaan upottaa muuttajia.
+Mitä tarkoittaa `"breweries/#{brewery.id}"`? Kyseinen merkkijonon alussa on ensiksi kaikkiin panimoihin viittaava "breweries", jonka jälkeen siihen tulee yksilöivän panimon id muuttujana. Muuttuja asetetaan käyttäen <code>#{}</code>-notaatiota, jonka avulla merkkijonoon voidaan upottaa muuttajia.
 
 > ## Tehtävä 6
 >
@@ -1031,7 +1031,7 @@ Partialin parametriksi saama panimo on muuttujassa brewery. Partialia siis kutsu
 
 Partialille voitaisiin antaa enemmänkin parametreja, mutta nyt annettiin ainoastaan yksi. Koska parametri on tyypiltään panimo eli Brewery, renderöidään _brewery.html.erb partiaali ja välitetään sille parametri muuttujan nimeltään brewery kautta. Parametrin välittävä muuttuja saa nimensä automaattisesti partialin nimen perusteella.
 
-Koska muutamme pian yksittäisen panimoin näkymää, mutta emme halua samaa templatea käyttävän kaikkien panimoiden näkyvän muuttuvan, luovutaan paritalin käytöstä kaikkien panimoiden sivulla ja muutetaan tiedosto app/views/breweries/index.html.erb seuraavaan muotoon:
+Koska muutamme pian yksittäisen panimon näkymää, mutta emme halua samaa templatea käyttävän kaikkien panimoiden näkymän muuttuvan, luovutaan partialin käytöstä kaikkien panimoiden sivulla ja muutetaan tiedosto app/views/breweries/index.html.erb seuraavaan muotoon:
 
 ```html
 <p style="color: green"><%= notice %></p>

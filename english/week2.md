@@ -1165,7 +1165,7 @@ If you remove beers with ratings from your application, the ratings which belong
 >
 > The error is caused by the fact that it tries to call <code>beer.name</code> from the method <code>to_s</code> of the rating object.
 >
-> Delete the orphan ratings by hand from the console. Try to think first of a command/some commands, which can help you to make a list of the orphan ratings. If you can't think of it yourself, you can find a ready-made answer for the exercise above in this page.
+> Delete the orphan ratings by hand from the console. Try to think first of a command/some commands, which can help you to make a list of the orphan ratings. If you can't think of it yourself, you can find a ready-made answer for the exercise below in this page.
 
 The ratings which belong to a beer can be deleted easily automatically. Alongside the beer model code <code>has_many :ratings</code>, you should mark that ratings are dependent on beers, and that they should be destroyed if beers are destroyed:
 
@@ -1189,7 +1189,7 @@ The orphan issue is solved now.
 >
 >If you can't yet access individual breweries from the all breweries page, fix it now!
 
-## Inderect object connection
+## Indirect object connection
 
 Your application is created in a way so that ratings belong to beers and that beers belong to breweries. This means that a set of ratings belong to each brewery, indirectly. Rails provides you with a simple way to go from the breweries to the ratings directly:
 
@@ -1227,7 +1227,7 @@ You will see, that beer and brewery both a method called <code>average_rating</c
 We notice that beer and brewery both have an identically named method <code>average_rating</code> that also work identically. It is not acceptable to leave our code this way.
 > ## Exercise 15
 >
-> Ruby provides you with a way to share methods between two classes with the help of modules, see https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/web/rubyn_perusteita.md#moduuli
+> Ruby provides you with a way to share methods between two classes with the help of modules, see https://ruby-doc.com/docs/ProgrammingRuby/html/tut_modules.html
 >
 > Modules have different uses – forming namespaces, for instance. However, now we are interested in the _mixin_ inheritance which can be implemented with modules.
 >
@@ -1242,7 +1242,7 @@ We notice that beer and brewery both have an identically named method <code>aver
 > end
 > ```
 >
-> - Attention: if the name of your module is <code>RatingAverage</code>, exactly like in the example, because of Ruby naming conventions it has to be placed in the file <code>app/models/concerns/rating_average.rb</code>. In fact, even though classes names are CamelCase and start with capital letters, their files names follow the snake_case.rb style.
+> - Attention: if the name of your module is <code>RatingAverage</code>, exactly like in the example, because of Ruby naming conventions it has to be placed in the file <code>app/models/concerns/rating_average.rb</code>. In fact, even though classes names are PascalCase and start with capital letters, their files names follow the snake_case.rb style.
 
 After you have done the exercise, the class Brewery should look more or less like below (assuming your module is called RatingAverage):
 
@@ -1390,7 +1390,7 @@ http://api.rubyonrails.org/classes/ActionController/HttpAuthentication/Digest.ht
 >```
 >and try what values variables _admin_accounts_, _username_ and _password_ contain ja form the right command.
 >
-> HINT 2: The code block should be evaluated either as true or untrue depending on whether the password is correct. The value doesn't however necessarily have to be either _true_ or _false_ because Ruby interprets also other values as either true (truthy) or untrue (falsy). For example _nil_ is interpreted as untrue/falsy. See more eg. at https://learn.co/lessons/truthiness-in-ruby-readme.
+> HINT 2: The code block should be evaluated either as true or untrue depending on whether the password is correct. The value doesn't however necessarily have to be either _true_ or _false_ because Ruby interprets also other values as either true (truthy) or untrue (falsy). For example _nil_ is interpreted as untrue/falsy. See more at [Truth value - Wikipedia](https://en.wikipedia.org/wiki/Truth_value#Computing), [class TrueClass](https://docs.ruby-lang.org/en/master/TrueClass.html) and [class FalseClass](https://docs.ruby-lang.org/en/master/FalseClass.html) .
 
 ## Application to Internet
 
@@ -1511,7 +1511,7 @@ Because it is a program in production, resetting the database (<code>rails db:dr
 
 Commit all your changes and push the code to Github. Deploy to the newest version to Heroku or Fly.io, as well.
 
-Mark the exercises you have done at https://studies.cs.helsinki.fi/stats/courses/rails2023.
+Mark the exercises you have done at https://studies.cs.helsinki.fi/stats/courses/rails2023/submissions.
 
 And let's continue coding: [week 3](https://github.com/mluukkai/WebPalvelinohjelmointi2023/blob/main/english/week3.md).
 
